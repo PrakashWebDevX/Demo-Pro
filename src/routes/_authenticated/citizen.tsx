@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/citizen")({
 
 function CitizenDashboard() {
   const { user, profile } = useAuth();
-  const { lang, t, pick } = useLang();
+  const { tr, lang, t, pick } = useLang();
 
   const { data: reports = [] } = useQuery({
     queryKey: ["my-reports", user?.id],
@@ -53,11 +53,9 @@ function CitizenDashboard() {
 
   return (
     <Page
-      title={`${lang === "en" ? "Namaste" : "नमस्ते"}, ${profile?.full_name ?? ""}`}
+      title={`${tr("Namaste", "नमस्ते")}, ${profile?.full_name ?? ""}`}
       description={
-        lang === "en"
-          ? "Report a local problem and follow what the government does next."
-          : "स्थानीय समस्या दर्ज करें और आगे की कार्रवाई देखें।"
+        tr("Report a local problem and follow what the government does next.", "स्थानीय समस्या दर्ज करें और आगे की कार्रवाई देखें।")
       }
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,7 +88,7 @@ function CitizenDashboard() {
       </div>
 
       <h2 className="mt-8 text-xl font-bold">
-        {lang === "en" ? "Recent reports" : "हाल की शिकायतें"}
+        {tr("Recent reports", "हाल की शिकायतें")}
       </h2>
       <div className="mt-3 grid gap-3">
         {reports.slice(0, 4).map((r) => (
@@ -113,9 +111,7 @@ function CitizenDashboard() {
         ))}
         {reports.length === 0 ? (
           <p className="text-muted-foreground">
-            {lang === "en"
-              ? "You have not reported any issue yet."
-              : "आपने अभी कोई शिकायत दर्ज नहीं की है।"}
+            {tr("You have not reported any issue yet.", "आपने अभी कोई शिकायत दर्ज नहीं की है।")}
           </p>
         ) : null}
       </div>

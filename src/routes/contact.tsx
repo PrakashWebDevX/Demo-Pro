@@ -20,12 +20,12 @@ import {
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us — Jan Samadhan Jharkhand" },
+      { title: "Contact Us — Eco-Bridge" },
       {
         name: "description",
         content: "Contact citizen support, government, innovation and technical teams.",
       },
-      { property: "og:title", content: "Contact Us — Jan Samadhan Jharkhand" },
+      { property: "og:title", content: "Contact Us — Eco-Bridge" },
       {
         property: "og:description",
         content: "We are here to help citizens and partner organizations.",
@@ -98,7 +98,7 @@ function ContactPage() {
 
   return (
     <Page
-      title="Contact Jan Samadhan Jharkhand"
+      title="Contact Eco-Bridge"
       description="We are here to help citizens and partner organizations."
       actions={
         <img

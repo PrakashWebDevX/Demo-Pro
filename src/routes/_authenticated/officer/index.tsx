@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, Page, StatCard } from "@/components/app/Page";
+import { PAGE_SIZE, Pagination } from "@/components/app/Pagination";
 import { PriorityBadge, StatusBadge } from "@/components/app/badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ function OfficerDashboard() {
   const [priority, setPriority] = useState("all");
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["all-reports"],
@@ -73,6 +75,11 @@ function OfficerDashboard() {
       }),
     [reports, district, status, priority, category, search],
   );
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [district, status, priority, category, search]);
+
 
   return (
     <Page
@@ -161,7 +168,7 @@ function OfficerDashboard() {
         {!isLoading && filtered.length === 0 ? (
           <EmptyState title={lang === "en" ? "No reports match" : "कोई शिकायत नहीं मिली"} />
         ) : null}
-        {filtered.map((r) => (
+        {visible.map((r) => (
           <div key={r.id} className="card-surface p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-sm text-muted-foreground">{r.public_issue_id}</span>
@@ -190,6 +197,7 @@ function OfficerDashboard() {
           </div>
         ))}
       </div>
+      <Pagination page={page} pageCount={pageCount} total={filtered.length} onPage={setPage} />
     </Page>
   );
 }

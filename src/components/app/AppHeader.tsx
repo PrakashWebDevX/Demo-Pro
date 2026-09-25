@@ -7,6 +7,7 @@ import { useLang } from "@/lib/i18n";
 import { ROLE_HOME, ROLE_LABELS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./NotificationBell";
+import { LanguageSelect } from "./LanguageSelect";
 import { THEME_OPTIONS, useTheme, type ThemeChoice } from "@/lib/theme";
 import {
   Sheet,
@@ -17,31 +18,7 @@ import {
 } from "@/components/ui/sheet";
 
 function LanguageToggle() {
-  const { lang, setLang } = useLang();
-  return (
-    <div
-      className="flex items-center rounded-md border border-primary-foreground/30 text-sm"
-      role="group"
-      aria-label="Language selector"
-    >
-      <button
-        type="button"
-        onClick={() => setLang("en")}
-        aria-pressed={lang === "en"}
-        className={`min-h-0 rounded-l-md px-3 py-1.5 ${lang === "en" ? "bg-primary-foreground text-primary" : "text-primary-foreground"}`}
-      >
-        English
-      </button>
-      <button
-        type="button"
-        onClick={() => setLang("hi")}
-        aria-pressed={lang === "hi"}
-        className={`min-h-0 rounded-r-md px-3 py-1.5 ${lang === "hi" ? "bg-primary-foreground text-primary" : "text-primary-foreground"}`}
-      >
-        हिन्दी
-      </button>
-    </div>
-  );
+  return <LanguageSelect variant="banner" />;
 }
 
 function ThemeSelect() {
@@ -63,7 +40,7 @@ function ThemeSelect() {
 }
 
 export function AppHeader() {
-  const { t } = useLang();
+  const { t, tr } = useLang();
   const { user, profile, role } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -79,14 +56,16 @@ export function AppHeader() {
     ? [
         { to: ROLE_HOME[role ?? "citizen"] ?? "/citizen", label: t("dashboard") },
         { to: "/innovation", label: t("innovation") },
+        { to: "/challenges", label: tr("My Challenges", "मेरी चुनौतियाँ") },
+        { to: "/impact", label: tr("Impact", "प्रभाव") },
         { to: "/help", label: t("help") },
-        { to: "/contact", label: "Contact" },
+        { to: "/contact", label: tr("Contact", "संपर्क") },
       ]
     : [
         { to: "/", label: t("home") },
         { to: "/innovation", label: t("innovation") },
         { to: "/help", label: t("help") },
-        { to: "/contact", label: "Contact" },
+        { to: "/contact", label: tr("Contact", "संपर्क") },
       ];
 
   return (

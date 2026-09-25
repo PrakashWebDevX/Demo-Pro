@@ -24,7 +24,7 @@ h1{font-size:22px;margin:0}header{border-bottom:3px solid #1e3a6e;padding-bottom
 dl{display:grid;grid-template-columns:200px 1fr;gap:6px 12px}dt{font-weight:600}
 table{width:100%;border-collapse:collapse;margin-top:8px}td,th{border:1px solid #ccc;padding:6px;text-align:left;font-size:14px}
 .note{font-size:12px;color:#555;margin-top:24px}@media print{button{display:none}}</style></head><body>
-<header><h1>Jan Samadhan Jharkhand — Report Receipt</h1><p>Report ID: <strong>${esc(r.public_issue_id)}</strong></p></header>
+<header><h1>Eco-Bridge — Report Receipt</h1><p>Report ID: <strong>${esc(r.public_issue_id)}</strong></p></header>
 <dl><dt>Title</dt><dd>${esc(r.title)}</dd><dt>Category</dt><dd>${esc(r.ai_category ?? r.category_key)}</dd>
 <dt>Location</dt><dd>${esc(location)}</dd><dt>Created</dt><dd>${esc(new Date(r.created_at).toLocaleString())}</dd>
 <dt>Source</dt><dd>${esc(r.source ?? "Web Form")}</dd>

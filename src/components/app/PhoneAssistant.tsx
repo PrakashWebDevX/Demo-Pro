@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { analyseReport } from "@/lib/ai-demo";
 import { DISTRICTS } from "@/lib/constants";
+import { useLang } from "@/lib/i18n";
+import { LANGUAGE_OPTIONS } from "@/i18n/languages";
+import { LanguageSelect } from "./LanguageSelect";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -17,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam"];
 const PROMPTS = [
   "Hello. Please describe the civic issue you want to report.",
   "Thank you. Please confirm your location.",
@@ -31,6 +33,7 @@ const STEPS = [
 const MIN_KEY = "jsj_phone_minimized";
 
 export function PhoneAssistant() {
+  const { tr } = useLang();
   const [minimized, setMinimized] = useState(false);
   const [open, setOpen] = useState(false);
   const [showHow, setShowHow] = useState(false);
@@ -70,15 +73,15 @@ export function PhoneAssistant() {
                 <Headset className="absolute -bottom-1 -right-1 size-5 rounded-full bg-accent p-0.5 text-accent-foreground" />
               </span>
               <div className="flex-1">
-                <p className="font-semibold leading-tight">Report by Phone</p>
+                <p className="font-semibold leading-tight">{tr("Report by Phone")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Speak in your language. AI creates your report.
+                  {tr("Speak in your language. AI creates your report.")}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setMin(true)}
-                aria-label="Minimise phone assistant"
+                aria-label={tr("Minimise phone assistant")}
                 className="-mr-2 -mt-2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
               >
                 <X className="size-4" />
@@ -86,10 +89,10 @@ export function PhoneAssistant() {
             </div>
             <div className="mt-3 flex gap-2">
               <Button className="flex-1" onClick={() => setOpen(true)}>
-                <Phone className="size-4" /> Start AI Call
+                <Phone className="size-4" /> {tr("Start AI Call")}
               </Button>
               <Button variant="outline" onClick={() => setShowHow(true)}>
-                How it works
+                {tr("How it works", "यह कैसे काम करता है")}
               </Button>
             </div>
           </section>
@@ -99,10 +102,9 @@ export function PhoneAssistant() {
       <Dialog open={showHow} onOpenChange={setShowHow}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>How Report by Phone works</DialogTitle>
+            <DialogTitle>{tr("How Report by Phone works")}</DialogTitle>
             <DialogDescription>
-              Demo voice assistant — real call integration can be connected later with Twilio or
-              Exotel.
+              {tr("Demo voice assistant — real call integration can be connected later.")}
             </DialogDescription>
           </DialogHeader>
           <StepList active={-1} />
@@ -115,6 +117,7 @@ export function PhoneAssistant() {
 }
 
 function StepList({ active }: { active: number }) {
+  const { tr } = useLang();
   return (
     <ol className="grid gap-2">
       {STEPS.map((s, i) => (
@@ -125,7 +128,7 @@ function StepList({ active }: { active: number }) {
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             {i + 1}
           </span>
-          <span className="font-medium">{s}</span>
+          <span className="font-medium">{tr(s)}</span>
         </li>
       ))}
     </ol>
@@ -135,7 +138,8 @@ function StepList({ active }: { active: number }) {
 function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [language, setLanguage] = useState("English");
+  const { tr, locale } = useLang();
+  const language = LANGUAGE_OPTIONS.find((l) => l.code === locale)?.english ?? "English";
   const [inCall, setInCall] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [step, setStep] = useState(0);
@@ -168,7 +172,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
   async function createReport() {
     if (!user) return;
     if (text.trim().length < 10) {
-      toast.error("Please describe the issue in at least 10 characters.");
+      toast.error(tr("Please describe the issue in at least 10 characters."));
       return;
     }
     setSaving(true);
@@ -198,7 +202,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
       .single();
     if (error || !data) {
       setSaving(false);
-      toast.error(error?.message ?? "Could not create the report.");
+      toast.error(error?.message ?? tr("Could not create the report."));
       return;
     }
     await supabase.from("report_updates").insert({
@@ -222,26 +226,24 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>AI Phone Assistant</DialogTitle>
+          <DialogTitle>{tr("AI Phone Assistant")}</DialogTitle>
           <DialogDescription>
-            Demo voice assistant — real call integration can be connected later with Twilio or
-            Exotel.
+            {tr("Demo voice assistant — real call integration can be connected later.")}
           </DialogDescription>
         </DialogHeader>
 
         {!user ? (
           <div className="grid gap-3">
-            <p>Please log in so the report can be saved to your account.</p>
+            <p>{tr("Please log in so the report can be saved to your account.")}</p>
             <Button asChild>
-              <Link to="/auth">Log in</Link>
+              <Link to="/auth">{tr("Log in")}</Link>
             </Button>
           </div>
         ) : created ? (
           <div className="grid gap-3 text-center">
-            <p className="text-lg font-semibold">{PROMPTS[2]}</p>
+            <p className="text-lg font-semibold">{tr(PROMPTS[2] ?? "")}</p>
             <p className="text-muted-foreground">
-              Report ID <span className="font-bold text-foreground">{created.publicId}</span> is
-              pending officer review.
+              {tr("Report ID {id} is pending officer review.", undefined, { id: created.publicId })}
             </p>
             <Button
               onClick={() => {
@@ -249,7 +251,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                 navigate({ to: "/reports/$id", params: { id: created.id } });
               }}
             >
-              View My Report
+              {tr("View My Report")}
             </Button>
           </div>
         ) : (
@@ -257,27 +259,18 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
             <StepList active={inCall ? step : -1} />
 
             <div className="grid gap-1.5">
-              <Label htmlFor="call-lang">Language</Label>
-              <select
-                id="call-lang"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="h-11 rounded-md border bg-background px-3"
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l}>{l}</option>
-                ))}
-              </select>
+              <Label htmlFor="call-lang">{tr("Call language")}</Label>
+              <LanguageSelect id="call-lang" />
             </div>
 
             {!inCall ? (
               <Button size="lg" className="h-14 text-lg" onClick={() => setInCall(true)}>
-                <Phone className="size-5" /> Start Demo Call
+                <Phone className="size-5" /> {tr("Start Demo Call")}
               </Button>
             ) : (
               <div className="rounded-lg bg-primary p-4 text-primary-foreground">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Demo call · {language}</span>
+                  <span>{tr("Demo call")} · {language}</span>
                   <span className="font-mono" aria-live="off">
                     {mm}:{ss}
                   </span>
@@ -292,7 +285,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                   ))}
                 </div>
                 <p className="text-center font-medium" aria-live="polite">
-                  “{PROMPTS[Math.min(step, 1)]}”
+                  “{tr(PROMPTS[Math.min(step, 1)] ?? "")}”
                 </p>
                 <Button
                   variant="secondary"
@@ -304,13 +297,13 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                     setStep(0);
                   }}
                 >
-                  <PhoneOff className="size-4" /> End call
+                  <PhoneOff className="size-4" /> {tr("End call")}
                 </Button>
               </div>
             )}
 
             <div className="grid gap-1.5">
-              <Label htmlFor="call-text">Type your issue instead</Label>
+              <Label htmlFor="call-text">{tr("Type your issue instead")}</Label>
               <Textarea
                 id="call-text"
                 rows={3}
@@ -324,7 +317,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="call-district">District</Label>
+                  <Label htmlFor="call-district">{tr("District")}</Label>
                   <select
                     id="call-district"
                     value={district}
@@ -337,7 +330,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                   </select>
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="call-place">Area / landmark</Label>
+                  <Label htmlFor="call-place">{tr("Area / landmark")}</Label>
                   <input
                     id="call-place"
                     value={place}
@@ -350,7 +343,7 @@ function CallDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
             </>
 
             <Button size="lg" onClick={createReport} disabled={saving}>
-              {saving ? "Creating report…" : "Create Report"}
+              {saving ? tr("Creating report…") : tr("Create Report")}
             </Button>
           </div>
         )}

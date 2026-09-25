@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { EmptyState, Page } from "@/components/app/Page";
+import { PAGE_SIZE, Pagination } from "@/components/app/Pagination";
 import { PriorityBadge, StatusBadge } from "@/components/app/badges";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,10 +26,11 @@ export const Route = createFileRoute("/_authenticated/reports/")({
 
 function MyReportsPage() {
   const { user } = useAuth();
-  const { lang, t, pick } = useLang();
+  const { tr, lang, t, pick } = useLang();
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["my-reports", user?.id],
@@ -81,28 +83,31 @@ function MyReportsPage() {
     [reports, status, category, search],
   );
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [status, category, search]);
+
+
   return (
     <Page
       title={t("my_reports")}
       description={
-        lang === "en"
-          ? "All issues you have reported, with their current status."
-          : "आपकी सभी दर्ज शिकायतें और उनकी वर्तमान स्थिति।"
+        tr("All issues you have reported, with their current status.", "आपकी सभी दर्ज शिकायतें और उनकी वर्तमान स्थिति।")
       }
     >
       <div className="card-surface grid gap-4 p-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="search">{lang === "en" ? "Search" : "खोजें"}</Label>
+          <Label htmlFor="search">{tr("Search", "खोजें")}</Label>
           <Input
             id="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={lang === "en" ? "Issue ID or title" : "आईडी या शीर्षक"}
+            placeholder={tr("Issue ID or title", "आईडी या शीर्षक")}
             className="h-12 text-base"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="status-filter">{lang === "en" ? "Status" : "स्थिति"}</Label>
+          <Label htmlFor="status-filter">{tr("Status", "स्थिति")}</Label>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger id="status-filter" className="h-12 text-base">
               <SelectValue />
@@ -118,7 +123,7 @@ function MyReportsPage() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="category-filter">{lang === "en" ? "Category" : "श्रेणी"}</Label>
+          <Label htmlFor="category-filter">{tr("Category", "श्रेणी")}</Label>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger id="category-filter" className="h-12 text-base">
               <SelectValue />
@@ -139,15 +144,13 @@ function MyReportsPage() {
         {isLoading ? <p className="text-muted-foreground">Loading…</p> : null}
         {!isLoading && filtered.length === 0 ? (
           <EmptyState
-            title={lang === "en" ? "No reports found" : "कोई शिकायत नहीं मिली"}
+            title={tr("No reports found", "कोई शिकायत नहीं मिली")}
             hint={
-              lang === "en"
-                ? "Try changing the filters, or report a new issue."
-                : "फ़िल्टर बदलें या नई शिकायत दर्ज करें।"
+              tr("Try changing the filters, or report a new issue.", "फ़िल्टर बदलें या नई शिकायत दर्ज करें।")
             }
           />
         ) : null}
-        {filtered.map((r) => (
+        {visible.map((r) => (
           <Link
             key={r.id}
             to="/reports/$id"
@@ -188,6 +191,7 @@ function MyReportsPage() {
           </Link>
         ))}
       </div>
+      <Pagination page={page} pageCount={pageCount} total={filtered.length} onPage={setPage} />
     </Page>
   );
 }

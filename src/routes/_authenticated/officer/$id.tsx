@@ -27,10 +27,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
+import { MediaGallery } from "@/components/app/MediaGallery";
+import { AssignmentPanel } from "@/components/app/AssignmentPanel";
+import { MasterClassificationCard } from "@/components/app/MasterClassificationCard";
+import { ChallengeLink } from "@/components/app/ChallengeLink";
 import {
   changeReportStatus,
   fetchDepartments,
-  fetchMediaUrls,
+  fetchReportMedia,
   fetchReport,
   fetchTimeline,
 } from "@/lib/reports";
@@ -56,7 +60,7 @@ function OfficerReviewPage() {
     queryKey: ["departments"],
     queryFn: fetchDepartments,
   });
-  const { data: media = [] } = useQuery({ queryKey: ["media", id], queryFn: () => fetchMediaUrls(id) });
+  const { data: media = [] } = useQuery({ queryKey: ["media", id], queryFn: () => fetchReportMedia(id) });
 
   const [remark, setRemark] = useState("");
   const [departmentId, setDepartmentId] = useState<string>("");
@@ -116,16 +120,7 @@ function OfficerReviewPage() {
               {report.reporter_name ?? (lang === "en" ? "Citizen" : "नागरिक")}
             </p>
             {media.length > 0 ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {media.map((url) => (
-                  <img
-                    key={url}
-                    src={url}
-                    alt={lang === "en" ? "Evidence" : "प्रमाण"}
-                    className="max-h-56 w-full rounded-md object-cover"
-                  />
-                ))}
-              </div>
+              <MediaGallery media={media} publicId={report.public_issue_id} className="mt-4" />
             ) : null}
           </div>
 
@@ -166,6 +161,26 @@ function OfficerReviewPage() {
                 : "एआई निर्णय में मदद करता है। कार्रवाई मनुष्य स्वीकृत करते हैं।"}
             </p>
           </div>
+
+          {user ? (
+            <MasterClassificationCard
+              report={report}
+              userId={user.id}
+              userName={profile?.full_name ?? "Government Officer"}
+            />
+          ) : null}
+
+          {user ? (
+            <div id="assignment-panel">
+              <AssignmentPanel
+                report={report}
+                userId={user.id}
+                userName={profile?.full_name ?? "Government Officer"}
+              />
+            </div>
+          ) : null}
+
+          <ChallengeLink reportId={report.id} />
 
           <div className="card-surface p-5">
             <h2 className="text-lg font-semibold">
@@ -244,6 +259,11 @@ function OfficerReviewPage() {
               <Button variant="outline" onClick={() => setConfirmResolve(true)} disabled={busy}>
                 {lang === "en" ? "Mark Resolved" : "समाधान दर्ज करें"}
               </Button>
+              {report.status === "resolved" || report.status === "citizen_feedback" ? (
+                <Button variant="outline" onClick={() => act("closed")} disabled={busy}>
+                  {lang === "en" ? "Close Issue" : "शिकायत बंद करें"}
+                </Button>
+              ) : null}
               <Button variant="destructive" onClick={() => act("rejected")} disabled={busy}>
                 {lang === "en" ? "Reject" : "अस्वीकार करें"}
               </Button>

@@ -83,18 +83,73 @@ export async function fetchTimeline(reportId: string): Promise<UpdateRow[]> {
   return (data ?? []) as UpdateRow[];
 }
 
-export async function fetchMediaUrls(reportId: string): Promise<string[]> {
+export interface ReportMediaItem {
+  id: string;
+  url: string;
+  kind: "image" | "video" | "file";
+  fileType: string | null;
+}
+
+/** All media for a report with short-lived signed URLs (RLS limits rows to authorised users). */
+export async function fetchReportMedia(reportId: string): Promise<ReportMediaItem[]> {
   const { data, error } = await supabase
     .from("report_media")
-    .select("file_url")
-    .eq("report_id", reportId);
+    .select("id, file_url, file_type, created_at")
+    .eq("report_id", reportId)
+    .order("created_at", { ascending: true });
   if (error) throw error;
-  const paths = (data ?? []).map((m) => m.file_url as string);
-  if (paths.length === 0) return [];
+  const rows = (data ?? []) as Array<{ id: string; file_url: string; file_type: string | null }>;
+  if (rows.length === 0) return [];
   const { data: signed } = await supabase.storage
     .from("report-media")
-    .createSignedUrls(paths, 3600);
-  return (signed ?? []).map((s) => s.signedUrl).filter(Boolean) as string[];
+    .createSignedUrls(
+      rows.map((r) => r.file_url),
+      3600,
+    );
+  return rows
+    .map((r, i) => {
+      const url = signed?.[i]?.signedUrl ?? "";
+      const t = r.file_type ?? "";
+      const kind: ReportMediaItem["kind"] = t.startsWith("image/")
+        ? "image"
+        : t.startsWith("video/")
+          ? "video"
+          : "file";
+      return { id: r.id, url, kind, fileType: r.file_type };
+    })
+    .filter((m) => m.url);
+}
+
+export async function fetchMediaUrls(reportId: string): Promise<string[]> {
+  return (await fetchReportMedia(reportId)).map((m) => m.url);
+}
+
+/**
+ * Uploads files to report-media storage (path: <uid>/<reportId>/...) and saves one
+ * report_media row per file. Failures are counted, never thrown, so the report stays saved.
+ */
+export async function uploadReportMedia(userId: string, reportId: string, files: File[]) {
+  let failed = 0;
+  for (const file of files) {
+    try {
+      const safe = file.name.replace(/[^\w.-]/g, "_");
+      const path = `${userId}/${reportId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+      const { error: uploadError } = await supabase.storage
+        .from("report-media")
+        .upload(path, file, file.type ? { contentType: file.type } : {});
+      if (uploadError) {
+        failed++;
+        continue;
+      }
+      const { error: rowError } = await supabase
+        .from("report_media")
+        .insert({ report_id: reportId, file_url: path, file_type: file.type || null });
+      if (rowError) failed++;
+    } catch {
+      failed++;
+    }
+  }
+  return { failed };
 }
 
 export async function changeReportStatus(args: {

@@ -35,7 +35,7 @@ export function StatusBadge({ status, className }: { status: string; className?:
 }
 
 export function PriorityBadge({ priority, className }: { priority: string; className?: string }) {
-  const { pick, lang } = useLang();
+  const { pick, lang, tr } = useLang();
   return (
     <span
       className={cn(
@@ -44,7 +44,7 @@ export function PriorityBadge({ priority, className }: { priority: string; class
         className,
       )}
     >
-      {pick(PRIORITY_LABELS[priority]) || priority} {lang === "en" ? "priority" : "प्राथमिकता"}
+      {pick(PRIORITY_LABELS[priority]) || priority} {tr("priority", "प्राथमिकता")}
     </span>
   );
 }

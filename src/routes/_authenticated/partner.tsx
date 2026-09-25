@@ -22,6 +22,14 @@ import {
   INNOVATION_STAGE_LABELS,
   type InnovationProject,
 } from "@/lib/innovation";
+import {
+  CHALLENGE_STAGE_LABELS,
+  ROLE_LABELS,
+  fetchMyInvitations,
+  fetchMyPartnerOrgs,
+  respondToInvitation,
+  type PartnerInvitation,
+} from "@/lib/challenges";
 
 export const Route = createFileRoute("/_authenticated/partner")({
   component: PartnerDashboard,
@@ -61,6 +69,19 @@ function PartnerDashboard() {
     enabled: Boolean(user?.id),
   });
 
+  const { data: orgs = [] } = useQuery({
+    queryKey: ["my-partner-orgs", user?.email],
+    queryFn: () => fetchMyPartnerOrgs(user?.email),
+    enabled: Boolean(user?.email),
+  });
+
+  const orgNames = Object.fromEntries(orgs.map((o) => [o.id, o.name]));
+  const { data: invitations = [] } = useQuery({
+    queryKey: ["my-invitations", orgs.map((o) => o.id).join(",")],
+    queryFn: () => fetchMyInvitations(orgs.map((o) => o.id), orgNames),
+    enabled: orgs.length > 0,
+  });
+
   const mine = projects.filter((p) => p.assigned_partner_id === user?.id);
   const open = projects.filter((p) => p.status === "open");
 
@@ -85,6 +106,39 @@ function PartnerDashboard() {
           tone="success"
         />
       </div>
+
+      {orgs.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-xl font-bold">
+            {lang === "en" ? "Innovation challenge invitations" : "नवाचार चुनौती आमंत्रण"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {orgs.map((o) => o.name).join(", ")} ·{" "}
+            {lang === "en"
+              ? "Demo Data — Replace with Verified Government and Partner Directory in Production."
+              : "डेमो डेटा — उत्पादन में सत्यापित सरकारी एवं भागीदार निर्देशिका से बदलें।"}
+          </p>
+          <div className="mt-3 grid gap-3">
+            {invitations.length === 0 ? (
+              <EmptyState
+                title={lang === "en" ? "No invitations yet" : "अभी कोई आमंत्रण नहीं"}
+                hint={
+                  lang === "en"
+                    ? "Government officers invite matched partners after approving an innovation challenge."
+                    : "अधिकारी चुनौती स्वीकृत करने के बाद भागीदारों को आमंत्रित करते हैं।"
+                }
+              />
+            ) : null}
+            {invitations.map((inv) => (
+              <InvitationCard
+                key={inv.id}
+                invitation={inv}
+                onDone={() => queryClient.invalidateQueries({ queryKey: ["my-invitations"] })}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <h2 className="mt-8 text-xl font-bold">
         {lang === "en" ? "My assigned projects" : "मेरी परियोजनाएँ"}
@@ -239,6 +293,97 @@ function ProjectWorkspace({
             <b>{lang === "en" ? "Government comments: " : "सरकारी टिप्पणी: "}</b>
             {project.government_comments}
           </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function InvitationCard({
+  invitation,
+  onDone,
+}: {
+  invitation: PartnerInvitation;
+  onDone: () => void;
+}) {
+  const { lang } = useLang();
+  const [busy, setBusy] = useState(false);
+  const c = invitation.challenge;
+  const pending = invitation.invitation_status === "sent";
+
+  async function respond(accepted: boolean) {
+    setBusy(true);
+    try {
+      await respondToInvitation(invitation.id, accepted);
+      toast.success(
+        accepted
+          ? lang === "en"
+            ? "Invitation accepted"
+            : "आमंत्रण स्वीकार किया गया"
+          : lang === "en"
+            ? "Invitation declined"
+            : "आमंत्रण अस्वीकार किया गया",
+      );
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save response");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const statusLabel: Record<string, string> = {
+    none: lang === "en" ? "Shortlisted" : "सूचीबद्ध",
+    sent: lang === "en" ? "Invitation received" : "आमंत्रण प्राप्त",
+    accepted: lang === "en" ? "Accepted" : "स्वीकृत",
+    declined: lang === "en" ? "Declined" : "अस्वीकृत",
+  };
+
+  return (
+    <div className="card-surface p-5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-lg font-semibold">{c?.title ?? invitation.partner_name}</h3>
+          <p className="text-sm text-muted-foreground">
+            {invitation.partner_name}
+            {invitation.selected_role ? ` · ${ROLE_LABELS[invitation.selected_role]}` : ""}
+            {c ? ` · ${CHALLENGE_STAGE_LABELS[c.stage] ?? c.stage}` : ""}
+          </p>
+        </div>
+        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+          {statusLabel[invitation.invitation_status]}
+        </span>
+      </div>
+
+      {c?.problem_statement ? (
+        <p className="mt-2 line-clamp-3 text-muted-foreground">{c.problem_statement}</p>
+      ) : null}
+
+      {invitation.match_score !== null ? (
+        <p className="mt-2 text-sm">
+          <b>{lang === "en" ? "Match score: " : "मिलान स्कोर: "}</b>
+          {invitation.match_score}/100
+          {invitation.match_reason ? ` — ${invitation.match_reason}` : ""}
+        </p>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {c ? (
+          <Button asChild variant="outline">
+            <Link to="/challenges/$id" params={{ id: c.id }}>
+              {lang === "en" ? "View challenge" : "चुनौती देखें"}
+            </Link>
+          </Button>
+        ) : null}
+        {pending ? (
+          <>
+            <Button onClick={() => respond(true)} disabled={busy}>
+              {lang === "en" ? "Accept invitation" : "आमंत्रण स्वीकारें"}
+            </Button>
+            <Button variant="outline" onClick={() => respond(false)} disabled={busy}>
+              {lang === "en" ? "Decline" : "अस्वीकार करें"}
+            </Button>
+          </>
         ) : null}
       </div>
     </div>

@@ -12,7 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
-import { fetchDepartments, fetchMediaUrls, fetchReport, fetchTimeline } from "@/lib/reports";
+import { MediaGallery } from "@/components/app/MediaGallery";
+import { CitizenAssignmentCard, useReportRealtime } from "@/components/app/CitizenAssignmentCard";
+import { ChallengeLink } from "@/components/app/ChallengeLink";
+import { fetchDepartments, fetchReportMedia, fetchReport, fetchTimeline } from "@/lib/reports";
 import { CATEGORY_LABELS, STATUS_FLOW, STATUS_LABELS } from "@/lib/constants";
 
 export const Route = createFileRoute("/_authenticated/reports/$id")({
@@ -22,8 +25,9 @@ export const Route = createFileRoute("/_authenticated/reports/$id")({
 function ReportDetailPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
-  const { lang, pick } = useLang();
+  const { tr, lang, pick } = useLang();
   const queryClient = useQueryClient();
+  useReportRealtime(id);
 
   const { data: report, isLoading } = useQuery({
     queryKey: ["report", id],
@@ -35,7 +39,7 @@ function ReportDetailPage() {
   });
   const { data: media = [] } = useQuery({
     queryKey: ["media", id],
-    queryFn: () => fetchMediaUrls(id),
+    queryFn: () => fetchReportMedia(id),
   });
   const { data: feedback } = useQuery({
     queryKey: ["feedback", id],
@@ -76,7 +80,7 @@ function ReportDetailPage() {
 
   if (isLoading) {
     return (
-      <Page title={lang === "en" ? "Loading report…" : "लोड हो रहा है…"}>
+      <Page title={tr("Loading report…", "लोड हो रहा है…")}>
         <p className="text-muted-foreground">Loading…</p>
       </Page>
     );
@@ -84,16 +88,19 @@ function ReportDetailPage() {
 
   if (!report) {
     return (
-      <Page title={lang === "en" ? "Report not found" : "शिकायत नहीं मिली"}>
+      <Page title={tr("Report not found", "शिकायत नहीं मिली")}>
         <Button asChild>
-          <Link to="/reports">{lang === "en" ? "Back to my reports" : "वापस जाएँ"}</Link>
+          <Link to="/reports">{tr("Back to my reports", "वापस जाएँ")}</Link>
         </Button>
       </Page>
     );
   }
 
-  const currentIndex = STATUS_FLOW.indexOf(report.status as (typeof STATUS_FLOW)[number]);
+  const flowStatus = report.status === "approved" ? "under_review" : report.status;
+  const currentIndex = STATUS_FLOW.indexOf(flowStatus as (typeof STATUS_FLOW)[number]);
   const isOwner = report.citizen_id === user?.id;
+  const latest = timeline.length > 0 ? timeline[timeline.length - 1] : undefined;
+  const feedbackStage = ["resolved", "citizen_feedback", "closed"].includes(report.status);
 
   return (
     <Page
@@ -124,18 +131,18 @@ function ReportDetailPage() {
               <PriorityBadge priority={report.priority} />
               {report.is_innovation ? (
                 <span className="rounded-full bg-accent/15 px-3 py-1 text-sm font-medium text-accent">
-                  {lang === "en" ? "Innovation challenge" : "नवाचार चुनौती"}
+                  {tr("Innovation challenge", "नवाचार चुनौती")}
                 </span>
               ) : null}
             </div>
             <p className="mt-4 whitespace-pre-line">{report.description}</p>
             <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-muted-foreground">{lang === "en" ? "Category" : "श्रेणी"}</dt>
+                <dt className="text-muted-foreground">{tr("Category", "श्रेणी")}</dt>
                 <dd className="font-medium">{pick(CATEGORY_LABELS[report.category_key])}</dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">{lang === "en" ? "Location" : "स्थान"}</dt>
+                <dt className="text-muted-foreground">{tr("Location", "स्थान")}</dt>
                 <dd className="font-medium">
                   {[report.village_or_ward, report.block, report.district]
                     .filter(Boolean)
@@ -144,14 +151,14 @@ function ReportDetailPage() {
               </div>
               <div>
                 <dt className="text-muted-foreground">
-                  {lang === "en" ? "Reported on" : "दर्ज तिथि"}
+                  {tr("Reported on", "दर्ज तिथि")}
                 </dt>
                 <dd className="font-medium">{new Date(report.created_at).toLocaleString()}</dd>
               </div>
               {report.latitude && report.longitude ? (
                 <div>
                   <dt className="text-muted-foreground">
-                    {lang === "en" ? "Map pin" : "मानचित्र बिंदु"}
+                    {tr("Map pin", "मानचित्र बिंदु")}
                   </dt>
                   <dd className="flex items-center gap-1 font-medium">
                     <MapPin className="size-4 text-primary" aria-hidden="true" />
@@ -160,49 +167,55 @@ function ReportDetailPage() {
                 </div>
               ) : null}
             </dl>
+            {latest ? (
+              <p className="mt-4 rounded-md bg-muted p-3 text-sm">
+                <b>{tr("Latest update: ", "नवीनतम अपडेट: ")}</b>
+                {pick(STATUS_LABELS[latest.new_status ?? ""]) || latest.new_status} —{" "}
+                {new Date(latest.created_at).toLocaleString()}
+                {latest.remark ? ` — ${latest.remark}` : ""}
+              </p>
+            ) : null}
             {report.officer_remark ? (
               <p className="mt-4 rounded-md bg-muted p-3 text-sm">
-                <b>{lang === "en" ? "Official remark: " : "आधिकारिक टिप्पणी: "}</b>
+                <b>{tr("Official remark: ", "आधिकारिक टिप्पणी: ")}</b>
                 {report.officer_remark}
               </p>
             ) : null}
           </div>
 
+          <CitizenAssignmentCard
+            reportId={report.id}
+            source={(report as { source?: string }).source}
+            areaType={(report as { area_type?: string | null }).area_type ?? null}
+          />
+
+          <ChallengeLink reportId={report.id} />
+
           {media.length > 0 ? (
             <div className="card-surface p-5">
               <h2 className="text-lg font-semibold">
-                {lang === "en" ? "Evidence" : "प्रमाण"}
+                {tr("Evidence", "प्रमाण")}
               </h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {media.map((url) => (
-                  <img
-                    key={url}
-                    src={url}
-                    alt={lang === "en" ? "Evidence photo" : "प्रमाण फोटो"}
-                    className="max-h-56 w-full rounded-md object-cover"
-                  />
-                ))}
-              </div>
+              <MediaGallery media={media} publicId={report.public_issue_id} className="mt-3" />
             </div>
           ) : null}
 
-          {isOwner && report.status === "resolved" ? (
+          {isOwner && feedbackStage ? (
             <div className="card-surface p-5">
               <h2 className="text-lg font-semibold">
-                {lang === "en" ? "Your feedback" : "आपकी प्रतिक्रिया"}
+                {tr("Your feedback", "आपकी प्रतिक्रिया")}
               </h2>
               {feedback || thanks ? (
                 <p className="mt-3 flex items-center gap-2 text-success">
                   <CheckCircle2 className="size-5" aria-hidden="true" />
-                  {lang === "en"
-                    ? "Thank you for your feedback."
-                    : "आपकी प्रतिक्रिया के लिए धन्यवाद।"}
+                  {tr("Thank you for your feedback.", "आपकी प्रतिक्रिया के लिए धन्यवाद।")}
+                  {feedback ? ` (${feedback.rating}/5)` : ""}
                 </p>
               ) : (
                 <div className="mt-3 space-y-4">
                   <div>
                     <p className="font-medium">
-                      {lang === "en" ? "Was your issue resolved?" : "क्या आपकी समस्या हल हुई?"}
+                      {tr("Was your issue resolved?", "क्या आपकी समस्या हल हुई?")}
                     </p>
                     <div className="mt-2 flex gap-3">
                       <Button
@@ -210,26 +223,26 @@ function ReportDetailPage() {
                         variant={resolvedConfirmed ? "default" : "outline"}
                         onClick={() => setResolvedConfirmed(true)}
                       >
-                        {lang === "en" ? "Yes" : "हाँ"}
+                        {tr("Yes", "हाँ")}
                       </Button>
                       <Button
                         type="button"
                         variant={!resolvedConfirmed ? "default" : "outline"}
                         onClick={() => setResolvedConfirmed(false)}
                       >
-                        {lang === "en" ? "No" : "नहीं"}
+                        {tr("No", "नहीं")}
                       </Button>
                     </div>
                   </div>
                   <div>
-                    <p className="font-medium">{lang === "en" ? "Rating" : "रेटिंग"}</p>
+                    <p className="font-medium">{tr("Rating", "रेटिंग")}</p>
                     <div className="mt-2 flex gap-1">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
                           key={n}
                           type="button"
                           onClick={() => setRating(n)}
-                          aria-label={`${n} ${lang === "en" ? "stars" : "स्टार"}`}
+                          aria-label={`${n} ${tr("stars", "स्टार")}`}
                           className="flex size-11 items-center justify-center rounded-md hover:bg-muted"
                         >
                           <Star
@@ -241,7 +254,7 @@ function ReportDetailPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="comment">{lang === "en" ? "Comment" : "टिप्पणी"}</Label>
+                    <Label htmlFor="comment">{tr("Comment", "टिप्पणी")}</Label>
                     <Textarea
                       id="comment"
                       rows={3}
@@ -250,7 +263,7 @@ function ReportDetailPage() {
                     />
                   </div>
                   <Button onClick={submitFeedback} disabled={saving}>
-                    {lang === "en" ? "Submit feedback" : "प्रतिक्रिया भेजें"}
+                    {tr("Submit feedback", "प्रतिक्रिया भेजें")}
                   </Button>
                 </div>
               )}
@@ -260,7 +273,7 @@ function ReportDetailPage() {
 
         <div className="card-surface h-fit p-5">
           <h2 className="text-lg font-semibold">
-            {lang === "en" ? "Status timeline" : "स्थिति समयरेखा"}
+            {tr("Status timeline", "स्थिति समयरेखा")}
           </h2>
           <ol className="mt-4 space-y-4">
             {STATUS_FLOW.map((s, i) => {

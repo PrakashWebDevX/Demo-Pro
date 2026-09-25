@@ -18,17 +18,18 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_ACCOUNTS, DISTRICTS, ROLE_HOME, ROLE_LABELS } from "@/lib/constants";
 import { useLang } from "@/lib/i18n";
+import { LanguageSelect } from "@/components/app/LanguageSelect";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Login — Jan Samadhan Jharkhand" },
+      { title: "Login — Eco-Bridge" },
       {
         name: "description",
         content:
           "Sign in as a citizen, government officer, department administrator or innovation partner.",
       },
-      { property: "og:title", content: "Login — Jan Samadhan Jharkhand" },
+      { property: "og:title", content: "Login — Eco-Bridge" },
       {
         property: "og:description",
         content: "Citizen and officer sign-in for the Jharkhand civic issue platform.",
@@ -52,7 +53,7 @@ const signUpSchema = z.object({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { lang, t } = useLang();
+  const { tr, lang, t } = useLang();
   const [busy, setBusy] = useState<string | null>(null);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -91,7 +92,7 @@ function AuthPage() {
       toast.error(error.message);
       return;
     }
-    toast.success(lang === "en" ? "Signed in" : "लॉगिन सफल");
+    toast.success(tr("Signed in", "लॉगिन सफल"));
     if (data.user) await goHomeFor(data.user.id);
   }
 
@@ -128,13 +129,11 @@ function AuthPage() {
     }
     if (!data.session) {
       toast.success(
-        lang === "en"
-          ? "Account created. Please check your email to confirm."
-          : "खाता बन गया। कृपया ईमेल जाँचें।",
+        tr("Account created. Please check your email to confirm.", "खाता बन गया। कृपया ईमेल जाँचें।"),
       );
       return;
     }
-    toast.success(lang === "en" ? "Account created" : "खाता बन गया");
+    toast.success(tr("Account created", "खाता बन गया"));
     if (data.user) await goHomeFor(data.user.id);
   }
 
@@ -176,26 +175,25 @@ function AuthPage() {
       toast.error(result.error.message);
       return;
     }
-    toast.success(`${account.label} — ${lang === "en" ? "signed in" : "लॉगिन सफल"}`);
+    toast.success(`${account.label} — ${tr("signed in", "लॉगिन सफल")}`);
     navigate({ to: ROLE_HOME[account.role] ?? "/citizen" });
   }
 
   return (
     <Page
       title={t("login")}
+      actions={<LanguageSelect id="auth-lang" />}
       description={
-        lang === "en"
-          ? "Sign in with email, or use a clearly labelled demo account for presentation."
-          : "ईमेल से लॉगिन करें, या प्रस्तुति के लिए डेमो खाते का उपयोग करें।"
+        tr("Sign in with email, or use a clearly labelled demo account for presentation.", "ईमेल से लॉगिन करें, या प्रस्तुति के लिए डेमो खाते का उपयोग करें।")
       }
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card-surface p-5 sm:p-6">
           <Tabs defaultValue="login">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">{lang === "en" ? "Sign in" : "लॉगिन"}</TabsTrigger>
+              <TabsTrigger value="login">{tr("Sign in", "लॉगिन")}</TabsTrigger>
               <TabsTrigger value="signup">
-                {lang === "en" ? "Create account" : "नया खाता"}
+                {tr("Create account", "नया खाता")}
               </TabsTrigger>
             </TabsList>
 
@@ -203,7 +201,7 @@ function AuthPage() {
               <form onSubmit={handleLogin} className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">
-                    {lang === "en" ? "Email or mobile-linked email" : "ईमेल"}
+                    {tr("Email or mobile-linked email", "ईमेल")}
                   </Label>
                   <Input
                     id="login-email"
@@ -216,7 +214,7 @@ function AuthPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">{lang === "en" ? "Password" : "पासवर्ड"}</Label>
+                  <Label htmlFor="login-password">{tr("Password", "पासवर्ड")}</Label>
                   <Input
                     id="login-password"
                     type="password"
@@ -237,7 +235,7 @@ function AuthPage() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="mt-4 space-y-4" noValidate>
                 <div className="space-y-2">
-                  <Label htmlFor="full-name">{lang === "en" ? "Full name" : "पूरा नाम"}</Label>
+                  <Label htmlFor="full-name">{tr("Full name", "पूरा नाम")}</Label>
                   <Input
                     id="full-name"
                     value={form.fullName}
@@ -251,7 +249,7 @@ function AuthPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="email">{lang === "en" ? "Email" : "ईमेल"}</Label>
+                    <Label htmlFor="email">{tr("Email", "ईमेल")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -266,7 +264,7 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="mobile">
-                      {lang === "en" ? "Mobile number (optional)" : "मोबाइल नंबर (वैकल्पिक)"}
+                      {tr("Mobile number (optional)", "मोबाइल नंबर (वैकल्पिक)")}
                     </Label>
                     <Input
                       id="mobile"
@@ -283,7 +281,7 @@ function AuthPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="district">{lang === "en" ? "District" : "जिला"}</Label>
+                    <Label htmlFor="district">{tr("District", "जिला")}</Label>
                     <Select
                       value={form.district}
                       onValueChange={(v) => setForm({ ...form, district: v })}
@@ -301,7 +299,7 @@ function AuthPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">{lang === "en" ? "I am a" : "मैं हूँ"}</Label>
+                    <Label htmlFor="role">{tr("I am a", "मैं हूँ")}</Label>
                     <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
                       <SelectTrigger id="role" className="h-12 text-base">
                         <SelectValue />
@@ -315,7 +313,7 @@ function AuthPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">{lang === "en" ? "Password" : "पासवर्ड"}</Label>
+                  <Label htmlFor="password">{tr("Password", "पासवर्ड")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -330,13 +328,11 @@ function AuthPage() {
                   ) : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {lang === "en"
-                    ? "Officer, department and admin accounts are created by the Super Admin."
-                    : "अधिकारी, विभाग एवं प्रशासक खाते सुपर एडमिन द्वारा बनाए जाते हैं।"}
+                  {tr("Officer, department and admin accounts are created by the Super Admin.", "अधिकारी, विभाग एवं प्रशासक खाते सुपर एडमिन द्वारा बनाए जाते हैं।")}
                 </p>
                 <Button type="submit" size="lg" className="w-full" disabled={busy === "signup"}>
                   {busy === "signup" ? <Loader2 className="size-4 animate-spin" /> : null}
-                  {lang === "en" ? "Create account" : "खाता बनाएँ"}
+                  {tr("Create account", "खाता बनाएँ")}
                 </Button>
               </form>
             </TabsContent>
@@ -347,13 +343,11 @@ function AuthPage() {
           <div className="flex items-center gap-2">
             <ShieldCheck className="size-5 text-accent" aria-hidden="true" />
             <h2 className="text-xl font-bold">
-              {lang === "en" ? "Demo Mode — for presentation" : "डेमो मोड — प्रस्तुति हेतु"}
+              {tr("Demo Mode — for presentation", "डेमो मोड — प्रस्तुति हेतु")}
             </h2>
           </div>
           <p className="mt-2 text-muted-foreground">
-            {lang === "en"
-              ? "These are clearly labelled demo accounts with seeded data. Password for every demo account: Jharkhand#Demo2026"
-              : "ये स्पष्ट रूप से चिह्नित डेमो खाते हैं। सभी डेमो खातों का पासवर्ड: Jharkhand#Demo2026"}
+            {tr("These are clearly labelled demo accounts with seeded data. Password for every demo account: Jharkhand#Demo2026", "ये स्पष्ट रूप से चिह्नित डेमो खाते हैं। सभी डेमो खातों का पासवर्ड: Jharkhand#Demo2026")}
           </p>
           <div className="mt-4 grid gap-3">
             {DEMO_ACCOUNTS.map((account) => (

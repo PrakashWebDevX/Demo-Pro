@@ -11,13 +11,13 @@ import { useLang } from "@/lib/i18n";
 export const Route = createFileRoute("/help")({
   head: () => ({
     meta: [
-      { title: "Help and FAQ — Jan Samadhan Jharkhand" },
+      { title: "Help and FAQ — Eco-Bridge" },
       {
         name: "description",
         content:
           "How to report a civic issue in Jharkhand, track its status, and what each status means.",
       },
-      { property: "og:title", content: "Help and FAQ — Jan Samadhan Jharkhand" },
+      { property: "og:title", content: "Help and FAQ — Eco-Bridge" },
       {
         property: "og:description",
         content: "Simple answers about reporting issues and tracking government action.",

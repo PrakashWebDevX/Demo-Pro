@@ -22,7 +22,7 @@ interface NotificationRow {
 
 function NotificationsPage() {
   const { user } = useAuth();
-  const { lang, t } = useLang();
+  const { tr, lang, t } = useLang();
   const queryClient = useQueryClient();
 
   const { data: items = [], isLoading } = useQuery({
@@ -48,12 +48,12 @@ function NotificationsPage() {
     <Page
       title={t("notifications")}
       description={
-        lang === "en" ? "Updates about your reports." : "आपकी शिकायतों से जुड़ी सूचनाएँ।"
+        tr("Updates about your reports.", "आपकी शिकायतों से जुड़ी सूचनाएँ।")
       }
       actions={
         items.some((i) => !i.read) ? (
           <Button variant="outline" onClick={markAllRead}>
-            {lang === "en" ? "Mark all as read" : "सभी पढ़ा हुआ चिह्नित करें"}
+            {tr("Mark all as read", "सभी पढ़ा हुआ चिह्नित करें")}
           </Button>
         ) : null
       }
@@ -62,11 +62,9 @@ function NotificationsPage() {
         {isLoading ? <p className="text-muted-foreground">Loading…</p> : null}
         {!isLoading && items.length === 0 ? (
           <EmptyState
-            title={lang === "en" ? "No notifications yet" : "अभी कोई सूचना नहीं"}
+            title={tr("No notifications yet", "अभी कोई सूचना नहीं")}
             hint={
-              lang === "en"
-                ? "You will be notified when your report status changes."
-                : "स्थिति बदलने पर आपको सूचना मिलेगी।"
+              tr("You will be notified when your report status changes.", "स्थिति बदलने पर आपको सूचना मिलेगी।")
             }
           />
         ) : null}
@@ -86,7 +84,7 @@ function NotificationsPage() {
                 {n.report_id ? (
                   <Button asChild variant="link" className="h-auto px-0">
                     <Link to="/reports/$id" params={{ id: n.report_id }}>
-                      {lang === "en" ? "Open report" : "शिकायत खोलें"}
+                      {tr("Open report", "शिकायत खोलें")}
                     </Link>
                   </Button>
                 ) : null}
@@ -104,9 +102,7 @@ function NotificationsPage() {
           <MessageCircle className="size-4" aria-hidden="true" /> WhatsApp integration ready
         </span>
         <span>
-          {lang === "en"
-            ? "(No real messages are sent in this prototype.)"
-            : "(इस प्रोटोटाइप में वास्तविक संदेश नहीं भेजे जाते।)"}
+          {tr("(No real messages are sent in this prototype.)", "(इस प्रोटोटाइप में वास्तविक संदेश नहीं भेजे जाते।)")}
         </span>
       </div>
     </Page>

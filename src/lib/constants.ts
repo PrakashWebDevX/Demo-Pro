@@ -1,4 +1,7 @@
 export const DISTRICTS = [
+  "Central City",
+  "Greenfield",
+  "Farmville",
   "Ranchi",
   "Dhanbad",
   "East Singhbhum",
@@ -54,10 +57,11 @@ export const CATEGORY_LABELS: Record<string, { en: string; hi: string }> = {
 export const STATUS_FLOW = [
   "submitted",
   "under_review",
-  "approved",
   "assigned",
   "in_progress",
   "resolved",
+  "citizen_feedback",
+  "closed",
 ] as const;
 
 export const STATUS_LABELS: Record<string, { en: string; hi: string }> = {
@@ -67,6 +71,8 @@ export const STATUS_LABELS: Record<string, { en: string; hi: string }> = {
   assigned: { en: "Assigned", hi: "विभाग को सौंपा" },
   in_progress: { en: "In Progress", hi: "कार्य जारी" },
   resolved: { en: "Resolved", hi: "समाधान हो गया" },
+  citizen_feedback: { en: "Citizen Feedback", hi: "नागरिक प्रतिक्रिया" },
+  closed: { en: "Closed", hi: "बंद" },
   rejected: { en: "Rejected", hi: "अस्वीकृत" },
   info_requested: { en: "More Information Needed", hi: "अधिक जानकारी चाहिए" },
 };
@@ -75,6 +81,7 @@ export const PRIORITY_LABELS: Record<string, { en: string; hi: string }> = {
   low: { en: "Low", hi: "कम" },
   medium: { en: "Medium", hi: "मध्यम" },
   high: { en: "High", hi: "उच्च" },
+  critical: { en: "Critical", hi: "अति गंभीर" },
 };
 
 export const ROLE_LABELS: Record<string, string> = {

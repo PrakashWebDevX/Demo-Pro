@@ -9,13 +9,13 @@ import { INNOVATION_STAGE_LABELS } from "@/lib/innovation";
 export const Route = createFileRoute("/innovation/")({
   head: () => ({
     meta: [
-      { title: "Innovation Challenges — Jan Samadhan Jharkhand" },
+      { title: "Innovation Challenges — Eco-Bridge" },
       {
         name: "description",
         content:
           "Approved civic challenges from Jharkhand districts open to universities, startups and CSR partners.",
       },
-      { property: "og:title", content: "Innovation Challenges — Jan Samadhan Jharkhand" },
+      { property: "og:title", content: "Innovation Challenges — Eco-Bridge" },
       {
         property: "og:description",
         content: "Work with the Government of Jharkhand on real local problems.",

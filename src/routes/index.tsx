@@ -24,17 +24,18 @@ import { StatusBadge } from "@/components/app/badges";
 import { useLang } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LABELS } from "@/lib/constants";
+import { VerticalWorkflowTimeline } from "@/components/app/VerticalWorkflowTimeline";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Jan Samadhan Jharkhand — Report civic issues, track action" },
+      { title: "Eco-Bridge — Report civic issues, track action" },
       {
         name: "description",
         content:
           "Citizens of Jharkhand can report local problems, track government action and follow innovation challenges in one mobile-friendly platform.",
       },
-      { property: "og:title", content: "Jan Samadhan Jharkhand" },
+      { property: "og:title", content: "Eco-Bridge" },
       {
         property: "og:description",
         content:
@@ -80,7 +81,7 @@ const ONBOARD = [
 ];
 
 function Landing() {
-  const { lang, t, pick } = useLang();
+  const { tr, lang, t, pick } = useLang();
   const { data } = useLandingData();
 
   return (
@@ -92,14 +93,10 @@ function Landing() {
             Government of Jharkhand · प्रोटोटाइप
           </p>
           <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight sm:text-4xl">
-            {lang === "en"
-              ? "Together, we turn local problems into local solutions."
-              : "मिलकर, हम स्थानीय समस्याओं को स्थानीय समाधान में बदलते हैं।"}
+            {tr("Together, we turn local problems into local solutions.", "मिलकर, हम स्थानीय समस्याओं को स्थानीय समाधान में बदलते हैं।")}
           </h1>
           <p className="mt-3 max-w-2xl text-lg text-primary-foreground/90">
-            {lang === "en"
-              ? "Report an issue, track action, and help build a better Jharkhand."
-              : "समस्या दर्ज करें, कार्रवाई देखें, और बेहतर झारखंड बनाने में सहयोग करें।"}
+            {tr("Report an issue, track action, and help build a better Jharkhand.", "समस्या दर्ज करें, कार्रवाई देखें, और बेहतर झारखंड बनाने में सहयोग करें।")}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg" variant="secondary">
@@ -125,7 +122,7 @@ function Landing() {
             >
               <Link to="/innovation">
                 <Users className="size-5" />{" "}
-                {lang === "en" ? "Explore Innovation Challenges" : "नवाचार चुनौतियाँ देखें"}
+                {tr("Explore Innovation Challenges", "नवाचार चुनौतियाँ देखें")}
               </Link>
             </Button>
           </div>
@@ -144,7 +141,7 @@ function Landing() {
         </div>
 
         <div className="p-6 sm:p-8">
-          <h2 className="text-lg font-bold">{lang === "en" ? "How it works" : "यह कैसे काम करता है"}</h2>
+          <h2 className="text-lg font-bold">{tr("How it works", "यह कैसे काम करता है")}</h2>
           <ol className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
               <li key={s.en} className="relative rounded-lg border bg-card p-4">
@@ -152,9 +149,9 @@ function Landing() {
                   <s.icon className="size-5" aria-hidden="true" strokeWidth={1.75} />
                 </div>
                 <p className="mt-3 text-sm font-semibold text-muted-foreground">
-                  {lang === "en" ? `Step ${i + 1}` : `चरण ${i + 1}`}
+                  {tr("Step {n}", "चरण {n}", { n: i + 1 })}
                 </p>
-                <p className="text-lg font-semibold">{lang === "en" ? s.en : s.hi}</p>
+                <p className="text-lg font-semibold">{tr(s.en, s.hi)}</p>
                 {i < STEPS.length - 1 ? (
                   <ArrowRight className="absolute right-3 top-6 hidden size-4 text-muted-foreground lg:block" aria-hidden="true" />
                 ) : null}
@@ -164,15 +161,15 @@ function Landing() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-3 sm:grid-cols-3" aria-label={lang === "en" ? "Getting started" : "शुरुआत"}>
+      <section className="mt-6 grid gap-3 sm:grid-cols-3" aria-label={tr("Getting started", "शुरुआत")}>
         {ONBOARD.map((o) => (
           <div key={o.en} className="card-surface flex gap-4 p-5 sm:flex-col sm:gap-3">
             <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
               <o.icon className="size-7" aria-hidden="true" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="text-lg font-semibold">{lang === "en" ? o.en : o.hi}</p>
-              <p className="mt-1 text-muted-foreground">{lang === "en" ? o.den : o.dhi}</p>
+              <p className="text-lg font-semibold">{tr(o.en, o.hi)}</p>
+              <p className="mt-1 text-muted-foreground">{tr(o.den, o.dhi)}</p>
             </div>
           </div>
         ))}
@@ -183,12 +180,10 @@ function Landing() {
           <AlertTriangle className="mt-0.5 size-6 shrink-0 text-warning-foreground" aria-hidden="true" />
           <div>
             <h2 className="text-lg font-semibold">
-              {lang === "en" ? "Emergency help" : "आपातकालीन सहायता"}
+              {tr("Emergency help", "आपातकालीन सहायता")}
             </h2>
             <p className="mt-1 text-foreground/90">
-              {lang === "en"
-                ? "For emergencies, contact the appropriate official emergency service. This platform is a civic reporting prototype and does not replace emergency services."
-                : "आपातकाल में कृपया संबंधित आधिकारिक आपातकालीन सेवा से संपर्क करें। यह मंच आपातकालीन सेवाओं का विकल्प नहीं है।"}
+              {tr("For emergencies, contact the appropriate official emergency service. This platform is a civic reporting prototype and does not replace emergency services.", "आपातकाल में कृपया संबंधित आधिकारिक आपातकालीन सेवा से संपर्क करें। यह मंच आपातकालीन सेवाओं का विकल्प नहीं है।")}
             </p>
           </div>
         </div>
@@ -199,38 +194,36 @@ function Landing() {
           <CheckCircle2 className="size-6 text-success" aria-hidden="true" />
           <p className="mt-2 text-3xl font-bold">{data?.resolved.length ?? 0}+</p>
           <p className="text-muted-foreground">
-            {lang === "en" ? "Issues resolved recently" : "हाल में हल हुई शिकायतें"}
+            {tr("Issues resolved recently", "हाल में हल हुई शिकायतें")}
           </p>
         </div>
         <div className="card-surface p-5">
           <ShieldCheck className="size-6 text-primary" aria-hidden="true" />
           <p className="mt-2 text-3xl font-bold">10</p>
           <p className="text-muted-foreground">
-            {lang === "en" ? "Districts in the demo coverage" : "डेमो में शामिल जिले"}
+            {tr("Districts in the demo coverage", "डेमो में शामिल जिले")}
           </p>
         </div>
         <div className="card-surface p-5">
           <Users className="size-6 text-accent" aria-hidden="true" />
           <p className="mt-2 text-3xl font-bold">{data?.challenges.length ?? 0}</p>
           <p className="text-muted-foreground">
-            {lang === "en" ? "Open innovation challenges" : "खुली नवाचार चुनौतियाँ"}
+            {tr("Open innovation challenges", "खुली नवाचार चुनौतियाँ")}
           </p>
         </div>
       </section>
 
       <section className="card-surface mt-8 p-6" aria-labelledby="impact-h">
         <h2 id="impact-h" className="text-xl font-bold">
-          {lang === "en" ? "Impact story: Ranchi waste clean-up" : "प्रभाव कहानी: रांची कचरा सफाई"}
+          {tr("Impact story: Ranchi waste clean-up", "प्रभाव कहानी: रांची कचरा सफाई")}
         </h2>
         <p className="mt-1 text-muted-foreground">
-          {lang === "en"
-            ? "A citizen reported overflowing garbage. The municipal team cleared it and installed a new bin. (Demo illustration)"
-            : "एक नागरिक ने कचरे की शिकायत की। नगर टीम ने सफाई कर नया डस्टबिन लगाया। (डेमो चित्र)"}
+          {tr("A citizen reported overflowing garbage. The municipal team cleared it and installed a new bin. (Demo illustration)", "एक नागरिक ने कचरे की शिकायत की। नगर टीम ने सफाई कर नया डस्टबिन लगाया। (डेमो चित्र)")}
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {[
-            { src: beforeImg, label: lang === "en" ? "Reported" : "दर्ज", tone: "bg-warning text-warning-foreground", alt: "Before: overflowing garbage bins and bags piled on a street corner" },
-            { src: afterImg, label: lang === "en" ? "Resolved" : "हल", tone: "bg-success text-success-foreground", alt: "After: the same kind of street corner swept clean with a new green waste bin" },
+            { src: beforeImg, label: tr("Reported", "दर्ज"), tone: "bg-warning text-warning-foreground", alt: "Before: overflowing garbage bins and bags piled on a street corner" },
+            { src: afterImg, label: tr("Resolved", "हल"), tone: "bg-success text-success-foreground", alt: "After: the same kind of street corner swept clean with a new green waste bin" },
           ].map((p) => (
             <figure key={p.label} className="relative overflow-hidden rounded-lg">
               <img src={p.src} alt={p.alt} width={944} height={704} loading="lazy" decoding="async" sizes="(min-width: 640px) 50vw, 100vw" className="aspect-[4/3] w-full object-cover" />
@@ -242,7 +235,7 @@ function Landing() {
 
       <section className="mt-8">
         <h2 className="text-xl font-bold">
-          {lang === "en" ? "Recently resolved issues" : "हाल में हल हुई शिकायतें"}
+          {tr("Recently resolved issues", "हाल में हल हुई शिकायतें")}
         </h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {(data?.resolved ?? []).map((r) => (
@@ -259,7 +252,7 @@ function Landing() {
           ))}
           {(data?.resolved.length ?? 0) === 0 ? (
             <p className="text-muted-foreground">
-              {lang === "en" ? "No resolved issues yet." : "अभी कोई हल हुई शिकायत नहीं।"}
+              {tr("No resolved issues yet.", "अभी कोई हल हुई शिकायत नहीं।")}
             </p>
           ) : null}
         </div>
@@ -267,12 +260,10 @@ function Landing() {
 
       <section className="card-surface mt-8 p-6">
         <h2 className="text-xl font-bold">
-          {lang === "en" ? "Partner collaboration" : "साझेदार सहयोग"}
+          {tr("Partner collaboration", "साझेदार सहयोग")}
         </h2>
         <p className="mt-2 max-w-3xl text-muted-foreground">
-          {lang === "en"
-            ? "Universities, student teams, startups, industries and CSR partners can take up approved innovation challenges — from research and prototype to field pilot and deployment."
-            : "विश्वविद्यालय, छात्र टीमें, स्टार्टअप, उद्योग और सीएसआर साझेदार स्वीकृत नवाचार चुनौतियों पर कार्य कर सकते हैं।"}
+          {tr("Universities, student teams, startups, industries and CSR partners can take up approved innovation challenges — from research and prototype to field pilot and deployment.", "विश्वविद्यालय, छात्र टीमें, स्टार्टअप, उद्योग और सीएसआर साझेदार स्वीकृत नवाचार चुनौतियों पर कार्य कर सकते हैं।")}
         </p>
         <Button asChild className="mt-4">
           <Link to="/innovation">
@@ -283,19 +274,19 @@ function Landing() {
 
       <section className="card-surface mt-8 p-6">
         <h2 className="text-xl font-bold">
-          {lang === "en" ? "Demo mode for presentation" : "प्रस्तुति हेतु डेमो मोड"}
+          {tr("Demo mode for presentation", "प्रस्तुति हेतु डेमो मोड")}
         </h2>
         <p className="mt-2 text-muted-foreground">
-          {lang === "en"
-            ? "Switch between demo roles instantly on the login page. Each role keeps its own permissions."
-            : "लॉगिन पृष्ठ पर डेमो भूमिकाएँ तुरंत बदलें। हर भूमिका की अपनी अनुमतियाँ हैं।"}
+          {tr("Switch between demo roles instantly on the login page. Each role keeps its own permissions.", "लॉगिन पृष्ठ पर डेमो भूमिकाएँ तुरंत बदलें। हर भूमिका की अपनी अनुमतियाँ हैं।")}
         </p>
         <Button asChild variant="outline" className="mt-4">
           <Link to="/auth">
-            {lang === "en" ? "Open Demo Mode" : "डेमो मोड खोलें"} <ArrowRight className="size-4" />
+            {tr("Open Demo Mode", "डेमो मोड खोलें")} <ArrowRight className="size-4" />
           </Link>
         </Button>
       </section>
+
+      <VerticalWorkflowTimeline />
     </Page>
   );
 }

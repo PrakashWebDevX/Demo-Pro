@@ -1,4 +1,4 @@
-# Jan Samadhan Jharkhand
+# Eco-Bridge
 
 Mobile-first civic issue reporting and solution management platform for the Government of Jharkhand.
 
@@ -18,35 +18,54 @@ Citizens report local problems, government officers review and resolve them with
 
 React 19 · TypeScript · Vite · TanStack Start / TanStack Router · TanStack Query · Tailwind CSS v4 · shadcn/ui · Zod · Supabase (auth, Postgres, storage, RLS)
 
-## Local setup
+---
+
+## 1. Run the project locally (end to end)
+
+### Prerequisites
+
+- **Node.js 20+** (`node -v` to check) — npm comes with it
+- *(Optional but recommended)* **Bun** (`curl -fsSL https://bun.sh/install | bash`) — this project ships a `bun.lock`, so installs are fastest and most reproducible with Bun. npm works too.
+
+### Step 1 — Install dependencies
 
 ```bash
-npm install
-cp .env.example .env    # fill in your Supabase values
-npm run dev
+bun install      # or: npm install
 ```
 
-The app runs on http://localhost:8080.
+### Step 2 — Create your `.env`
 
-## Environment variables
+```bash
+cp .env.example .env
+```
 
-| Variable | Description |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable (anon) key |
-| `VITE_SUPABASE_PROJECT_ID` | Supabase project ref |
+Then fill in your Supabase values (see Step 3 for where to find them):
 
-No secret keys are stored in the codebase. Server-side keys (service role) are never exposed to the browser.
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-anon-key
+VITE_SUPABASE_PROJECT_ID=your-project-ref
+```
 
-## Supabase setup
+> The URL and the key **must come from the same Supabase project**, otherwise every request returns "Invalid API key" / 401.
 
-1. Create a Supabase project.
-2. Run every SQL file in `supabase/migrations/` in order (SQL editor or `supabase db push`). This creates the tables (`profiles`, `user_roles`, `departments`, `issue_categories`, `reports`, `report_media`, `report_updates`, `notifications`, `feedback`, `innovation_projects`, `partner_applications`), row-level security policies, triggers and demo data.
-3. Authentication → Providers: enable **Email**. For the demo, enable auto-confirm so accounts work immediately.
-4. Storage: create a **private** bucket named `report-media` (10 MB file size limit). Media is served through signed URLs.
-5. Copy the project URL and publishable key into `.env`.
+### Step 3 — Set up the Supabase backend
 
-## Demo accounts
+1. Create a project at [supabase.com](https://supabase.com).
+2. In **SQL Editor**, run every SQL file in order. First the ones in `supabase/migrations/` (in filename order), then the ones in `docs/sql/` (in date order). This creates the tables (`profiles`, `user_roles`, `departments`, `issue_categories`, `reports`, `report_media`, `report_updates`, `notifications`, `feedback`, `innovation_projects`, `partner_applications` and the innovation/tracking additions), row-level security policies, triggers and demo data.
+3. **Authentication → Providers**: enable **Email**. For the demo, enable auto-confirm so the demo accounts work immediately.
+4. **Storage**: create a **private** bucket named `report-media` (10 MB file size limit). Media is served through signed URLs.
+5. Copy the project URL and publishable key into `.env` (Project Settings → API).
+
+### Step 4 — Start the dev server
+
+```bash
+bun run dev      # or: npm run dev
+```
+
+Open **http://localhost:8080**. The preview hot-reloads as you edit.
+
+### Step 5 — Sign in with a demo account
 
 Password for every demo account: `Jharkhand#Demo2026`
 
@@ -59,33 +78,75 @@ Password for every demo account: `Jharkhand#Demo2026`
 | Industry / Startup / CSR Partner | industry@demo.jh |
 | Super Admin | admin@demo.jh |
 
-The login page has one-click buttons for each demo role; the first click creates the account against your own Supabase project and links the seeded demo data.
+Full end-to-end journey to try: sign in as **citizen@demo.jh** → submit a report with a photo → sign in as **officer@demo.jh** → review the report, accept the AI suggestion and mark it resolved → back as the citizen, confirm and give feedback.
 
-### Demo journey
+### Troubleshooting
 
-Sign in as the Demo Citizen → open `JH-2026-0001` (waste issue in Ranchi) to see the full timeline: Submitted → Under Review → Assigned (Municipal Administration) → In Progress → Resolved → 5-star feedback. Sign in as the Demo Government Officer to review new reports, see the AI suggestion and act on it.
+| Symptom | Cause / fix |
+| --- | --- |
+| "Invalid API key" or 401 on every page | `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are from different projects. Use both from the same project and restart the dev server. |
+| "useLang must be used inside LanguageProvider" | Stale dev-server state — restart `bun run dev`. |
+| Tables / columns missing errors | Some SQL files weren't run. Re-run every file from Step 3.2. |
+| Images fail to upload | The private `report-media` storage bucket doesn't exist (Step 3.4). |
 
-## Build
+---
+
+## 2. Deploy to Vercel
+
+This is a **full-stack app** (server-rendered pages + server functions), so it needs Vercel's runtime — not plain static hosting. The build uses **Nitro**, which has a built-in Vercel target via the `NITRO_PRESET=vercel` environment variable.
+
+### Option A — Vercel CLI (recommended for a first deploy)
 
 ```bash
-npm run build
+# 1. Build with the Vercel preset
+NITRO_PRESET=vercel bun run build        # npm: NITRO_PRESET=vercel npm run build
+# (Windows PowerShell: $env:NITRO_PRESET='vercel'; npm run build)
+
+# 2. Deploy the prebuilt output
+npx vercel deploy --prebuilt
 ```
 
-## Deploy to Vercel or Netlify
+Follow the CLI prompts to link the project. The output directory is `.vercel/output/` (auto-detected from the preset — do not set one manually).
 
-1. Push the project to GitHub.
-2. **Vercel** — import the repository, framework preset "Vite" (build command `npm run build`), and add the three `VITE_SUPABASE_*` environment variables.
-3. **Netlify** — "Add new site → Import from Git", build command `npm run build`, and add the same environment variables. `netlify.toml` is included with the SPA redirect so deep links such as `/reports/123` work after a refresh.
-4. Redeploy after adding environment variables.
+### Option B — Vercel dashboard (deploy on every Git push)
 
-## GitHub export checklist
+1. Push the repo to GitHub/GitLab/Bitbucket.
+2. In Vercel: **Add New → Project** → import the repo.
+3. Framework Preset: **Other** (no preset override).
+4. Build Command: `npm run build` (or `bun run build`)
+   Output Directory: leave **empty / auto**.
+5. Environment Variables (Project → Settings → Environment Variables), all environments:
+   - `NITRO_PRESET` = `vercel`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `VITE_SUPABASE_PROJECT_ID`
+6. Deploy. Every push to the production branch redeploys automatically.
 
-- [ ] `.env` is git-ignored; `.env.example` is committed
-- [ ] `supabase/migrations/` committed and applied to the target project
-- [ ] `report-media` storage bucket created (private)
-- [ ] Email auth enabled in Supabase
-- [ ] Environment variables set on the hosting provider
+### After deploying
 
-## AI suggestions
+- The Supabase values above are the *browser/publishable* pair only — no secret keys are stored in this codebase, so nothing sensitive ships to the client.
+- If pages show "Invalid API key" after deploy, re-check that the URL and key come from the same Supabase project.
+- Refresh / deep-link 404s mean the `NITRO_PRESET=vercel` variable wasn't picked up — verify it is set as a **build** environment variable, then redeploy.
 
-The AI layer (`src/lib/ai-demo.ts`) is deterministic keyword logic, so the prototype needs no AI provider or API key. It returns a structured suggestion (category, priority, department, duplicate count, next action) so a real model can later be called from a server function and return the same shape. Every suggestion is labelled and requires human approval before action.
+---
+
+## Environment variables
+
+| Variable | Where | Description |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | `.env` + hosting | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` + hosting | Supabase publishable (anon) key |
+| `VITE_SUPABASE_PROJECT_ID` | `.env` + hosting | Supabase project ref |
+| `NITRO_PRESET` | build env on Vercel | Must be `vercel` when deploying to Vercel |
+
+No secret keys are stored in the codebase. Server-side keys (service role) are never exposed to the browser.
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `bun run dev` | Dev server on http://localhost:8080 |
+| `bun run build` | Production build |
+| `bun run preview` | Preview the production build locally |
+| `bun run lint` | ESLint |
+| `bun run format` | Prettier |

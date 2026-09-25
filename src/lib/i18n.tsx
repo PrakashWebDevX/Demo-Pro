@@ -1,11 +1,16 @@
+import type React from "react";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { MESSAGES } from "@/i18n/messages";
+import { isLocale, type Locale } from "@/i18n/languages";
 
+export type { Locale } from "@/i18n/languages";
+/** Legacy two-value language used by screens not yet fully translated (they fall back to English). */
 export type Lang = "en" | "hi";
 
 type Dict = Record<string, { en: string; hi: string }>;
 
 export const translations: Dict = {
-  app_name: { en: "Jan Samadhan Jharkhand", hi: "जन समाधान झारखंड" },
+  app_name: { en: "Eco-Bridge", hi: "Eco-Bridge" },
   app_tagline: {
     en: "Citizen Issue Resolution and Innovation Platform",
     hi: "नागरिक शिकायत समाधान एवं नवाचार मंच",
@@ -35,50 +40,93 @@ export const translations: Dict = {
   all: { en: "All", hi: "सभी" },
 };
 
+type Params = Record<string, string | number>;
+
 interface LanguageContextValue {
+  /** Legacy value: "hi" only when Hindi is selected, otherwise "en" (English fallback). */
   lang: Lang;
-  setLang: (l: Lang) => void;
+  /** Full selected locale. */
+  locale: Locale;
+  setLang: (l: Locale) => void;
   t: (key: keyof typeof translations | string) => string;
+  /** Translate by English source text. `hi` is an optional inline Hindi override. */
+  tr: (en: string, hi?: string, params?: Params) => string;
   pick: (pair?: { en: string; hi: string }) => string;
 }
 
-const LanguageContext = createContext<LanguageContextValue | null>(null);
+// Keep one context instance across hot reloads so the provider and consumers always match.
+const g = globalThis as unknown as { __jsjLangCtx?: React.Context<LanguageContextValue | null> };
+const LanguageContext = (g.__jsjLangCtx ??= createContext<LanguageContextValue | null>(null));
+const STORAGE_KEY = "jsj_lang";
+
+function fill(s: string, params?: Params) {
+  if (!params) return s;
+  return s.replace(/\{(\w+)\}/g, (m, k: string) => (k in params ? String(params[k]) : m));
+}
+
+export function translate(locale: Locale, en: string, hi?: string, params?: Params) {
+  let out = en;
+  if (locale === "hi") out = hi || MESSAGES[en]?.hi || en;
+  else if (locale !== "en") out = MESSAGES[en]?.[locale] || en;
+  return fill(out, params);
+}
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
+  const [locale, setLocale] = useState<Locale>("en");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("jsj_lang");
-    if (saved === "hi" || saved === "en") setLangState(saved);
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (isLocale(saved)) setLocale(saved);
   }, []);
 
-  const setLang = useCallback((l: Lang) => {
-    setLangState(l);
-    window.localStorage.setItem("jsj_lang", l);
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  const setLang = useCallback((l: Locale) => {
+    if (!isLocale(l)) return;
+    setLocale(l);
+    window.localStorage.setItem(STORAGE_KEY, l);
   }, []);
+
+  const tr = useCallback(
+    (en: string, hi?: string, params?: Params) => translate(locale, en, hi, params),
+    [locale],
+  );
 
   const t = useCallback(
     (key: string) => {
       const entry = translations[key];
-      return entry ? entry[lang] : key;
+      return entry ? translate(locale, entry.en, entry.hi) : key;
     },
-    [lang],
+    [locale],
   );
 
   const pick = useCallback(
-    (pair?: { en: string; hi: string }) => (pair ? pair[lang] : ""),
-    [lang],
+    (pair?: { en: string; hi: string }) => (pair ? translate(locale, pair.en, pair.hi) : ""),
+    [locale],
   );
 
+  const lang: Lang = locale === "hi" ? "hi" : "en";
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, pick }}>
+    <LanguageContext.Provider value={{ lang, locale, setLang, t, tr, pick }}>
       {children}
     </LanguageContext.Provider>
   );
 }
 
+const FALLBACK: LanguageContextValue = {
+  lang: "en",
+  locale: "en",
+  setLang: () => {},
+  t: (key: string) => translations[key]?.en ?? key,
+  tr: (en: string, _hi?: string, params?: Params) => fill(en, params),
+  pick: (pair?: { en: string; hi: string }) => pair?.en ?? "",
+};
+
 export function useLang() {
   const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error("useLang must be used inside LanguageProvider");
-  return ctx;
+  // Safe English fallback instead of blanking the page if the provider is ever missing.
+  return ctx ?? FALLBACK;
 }

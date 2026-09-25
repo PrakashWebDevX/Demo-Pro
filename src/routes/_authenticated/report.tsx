@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import {
   Camera,
   CheckCircle2,
+  ImagePlus,
+  Video,
   CloudOff,
   Loader2,
   MapPin,
@@ -30,7 +32,14 @@ import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { CATEGORY_KEYS, CATEGORY_LABELS, DISTRICTS } from "@/lib/constants";
 import { analyseReport } from "@/lib/ai-demo";
-import { fetchDepartments } from "@/lib/reports";
+import { fetchDepartments, uploadReportMedia } from "@/lib/reports";
+import { LanguageSelect } from "@/components/app/LanguageSelect";
+import {
+  MAX_IMAGES,
+  validateImages,
+  validateVideo,
+  formatBytes,
+} from "@/lib/media";
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportIssuePage,
@@ -43,6 +52,7 @@ interface DraftState {
   title: string;
   description: string;
   district: string;
+  area_type: "urban" | "rural";
   block: string;
   municipality: string;
   village_or_ward: string;
@@ -55,6 +65,7 @@ const emptyDraft: DraftState = {
   title: "",
   description: "",
   district: "Ranchi",
+  area_type: "urban",
   block: "",
   municipality: "",
   village_or_ward: "",
@@ -64,13 +75,14 @@ const emptyDraft: DraftState = {
 
 function ReportIssuePage() {
   const { user, profile } = useAuth();
-  const { lang, pick, t } = useLang();
+  const { tr, lang, pick, t } = useLang();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<DraftState>(emptyDraft);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [images, setImages] = useState<Array<{ file: File; url: string }>>([]);
+  const [video, setVideo] = useState<File | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
   const [created, setCreated] = useState<{ id: string; publicId: string } | null>(null);
@@ -121,15 +133,13 @@ function ReportIssuePage() {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
     setSavedOffline(true);
     toast.success(
-      lang === "en"
-        ? "Saved offline on this device. Submit when internet is available."
-        : "इस डिवाइस पर ऑफलाइन सहेजा गया। इंटरनेट आने पर जमा करें।",
+      tr("Saved offline on this device. Submit when internet is available.", "इस डिवाइस पर ऑफलाइन सहेजा गया। इंटरनेट आने पर जमा करें।"),
     );
   }
 
   function useMyLocation() {
     if (!navigator.geolocation) {
-      toast.error(lang === "en" ? "Location is not available" : "स्थान उपलब्ध नहीं है");
+      toast.error(tr("Location is not available", "स्थान उपलब्ध नहीं है"));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -139,37 +149,61 @@ function ReportIssuePage() {
           latitude: pos.coords.latitude.toFixed(5),
           longitude: pos.coords.longitude.toFixed(5),
         }));
-        toast.success(lang === "en" ? "Location added" : "स्थान जोड़ा गया");
+        toast.success(tr("Location added", "स्थान जोड़ा गया"));
       },
       () =>
         toast.error(
-          lang === "en"
-            ? "Could not get location. Please enter it manually."
-            : "स्थान नहीं मिला। कृपया मैन्युअल रूप से भरें।",
+          tr("Could not get location. Please enter it manually.", "स्थान नहीं मिला। कृपया मैन्युअल रूप से भरें।"),
         ),
     );
   }
 
-  function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
+  function pickImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (picked.length === 0) return;
+    const err = validateImages(picked, images.length);
+    if (err) {
+      setMediaError(tr(err));
+      return;
+    }
+    setMediaError(null);
+    setImages((prev) => [...prev, ...picked.map((file) => ({ file, url: URL.createObjectURL(file) }))]);
+  }
+
+  function removeImage(index: number) {
+    setImages((prev) => {
+      const item = prev[index];
+      if (item) URL.revokeObjectURL(item.url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function pickVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
-    setFile(f);
-    setPreview(f ? URL.createObjectURL(f) : null);
+    e.target.value = "";
+    if (!f) return;
+    const err = validateVideo(f);
+    if (err) {
+      setMediaError(tr(err));
+      return;
+    }
+    setMediaError(null);
+    setVideo(f);
   }
 
   function validateStep(n: number): string | null {
     if (n === 1 && !form.category_key) {
-      return lang === "en" ? "Please select a category." : "कृपया श्रेणी चुनें।";
+      return tr("Please select a category.", "कृपया श्रेणी चुनें।");
     }
     if (n === 2) {
       if (form.title.trim().length < 5)
-        return lang === "en" ? "Title must be at least 5 characters." : "शीर्षक कम से कम 5 अक्षर।";
+        return tr("Title must be at least 5 characters.", "शीर्षक कम से कम 5 अक्षर।");
       if (form.description.trim().length < 15)
-        return lang === "en"
-          ? "Please describe the issue in at least 15 characters."
-          : "कृपया कम से कम 15 अक्षरों में विवरण दें।";
+        return tr("Please describe the issue in at least 15 characters.", "कृपया कम से कम 15 अक्षरों में विवरण दें।");
     }
     if (n === 4 && !form.district) {
-      return lang === "en" ? "Please select a district." : "कृपया जिला चुनें।";
+      return tr("Please select a district.", "कृपया जिला चुनें।");
     }
     return null;
   }
@@ -204,6 +238,7 @@ function ReportIssuePage() {
         description: form.description.trim(),
         category_key: form.category_key,
         district: form.district,
+        ...({ area_type: form.area_type } as object),
         block: form.block || null,
         municipality: form.municipality || null,
         village_or_ward: form.village_or_ward || null,
@@ -223,20 +258,14 @@ function ReportIssuePage() {
 
     if (insertError || !data) {
       setSubmitting(false);
-      setError(insertError?.message ?? "Could not submit the report.");
+      setError(insertError?.message ?? tr("Could not submit the report."));
       return;
     }
 
-    if (file) {
-      const path = `${user.id}/${data.id}/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
-      const { error: uploadError } = await supabase.storage
-        .from("report-media")
-        .upload(path, file, { contentType: file.type });
-      if (!uploadError) {
-        await supabase
-          .from("report_media")
-          .insert({ report_id: data.id, file_url: path, file_type: file.type });
-      }
+    const files = [...images.map((i) => i.file), ...(video ? [video] : [])];
+    if (files.length > 0) {
+      const { failed } = await uploadReportMedia(user.id, data.id, files);
+      if (failed > 0) toast.warning(tr("Some media could not be uploaded, but your report was saved."));
     }
 
     window.localStorage.removeItem(DRAFT_KEY);
@@ -247,23 +276,21 @@ function ReportIssuePage() {
 
   if (created) {
     return (
-      <Page title={lang === "en" ? "Report submitted" : "शिकायत दर्ज हो गई"}>
+      <Page title={tr("Report submitted", "शिकायत दर्ज हो गई")}>
         <div className="card-surface mx-auto max-w-xl p-6 text-center">
           <CheckCircle2 className="mx-auto size-14 text-success" aria-hidden="true" />
           <h2 className="mt-4 text-2xl font-bold">
-            {lang === "en" ? "Thank you" : "धन्यवाद"}
+            {tr("Thank you", "धन्यवाद")}
           </h2>
           <p className="mt-2 text-muted-foreground">
-            {lang === "en"
-              ? "Your issue will be reviewed by the concerned team."
-              : "आपकी शिकायत संबंधित टीम द्वारा देखी जाएगी।"}
+            {tr("Your issue will be reviewed by the concerned team.", "आपकी शिकायत संबंधित टीम द्वारा देखी जाएगी।")}
           </p>
           <p className="mt-4 rounded-md bg-muted p-4 font-mono text-xl font-bold">
             {created.publicId}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button onClick={() => navigate({ to: "/reports/$id", params: { id: created.id } })}>
-              {lang === "en" ? "View status timeline" : "स्थिति देखें"}
+              {tr("View status timeline", "स्थिति देखें")}
             </Button>
             <Button variant="outline" onClick={() => navigate({ to: "/citizen" })}>
               {t("dashboard")}
@@ -277,21 +304,20 @@ function ReportIssuePage() {
   return (
     <Page
       title={t("report_issue")}
+      actions={<LanguageSelect id="report-lang" />}
       description={
-        lang === "en"
-          ? "Five simple steps. You can save an offline draft at any time."
-          : "पाँच आसान चरण। आप कभी भी ऑफलाइन ड्राफ्ट सहेज सकते हैं।"
+        tr("Five simple steps. You can save an offline draft at any time.", "पाँच आसान चरण। आप कभी भी ऑफलाइन ड्राफ्ट सहेज सकते हैं।")
       }
     >
       <div className="mx-auto max-w-2xl">
         <div className="mb-4">
           <Progress value={(step / 5) * 100} aria-label="Form progress" />
           <p className="mt-2 text-sm text-muted-foreground">
-            {lang === "en" ? `Step ${step} of 5` : `चरण ${step} / 5`}
+            {tr("Step {n} of 5", "चरण {n} / 5", { n: step })}
             {savedOffline ? (
               <span className="ml-3 inline-flex items-center gap-1 text-warning-foreground">
                 <CloudOff className="size-4" aria-hidden="true" />
-                {lang === "en" ? "Saved Offline" : "ऑफलाइन सहेजा गया"}
+                {tr("Saved Offline", "ऑफलाइन सहेजा गया")}
               </span>
             ) : null}
           </p>
@@ -301,7 +327,7 @@ function ReportIssuePage() {
           {step === 1 ? (
             <fieldset>
               <legend className="text-lg font-semibold">
-                {lang === "en" ? "1. Select category" : "1. श्रेणी चुनें"}
+                {tr("1. Select category", "1. श्रेणी चुनें")}
               </legend>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {CATEGORY_KEYS.map((key) => (
@@ -326,27 +352,25 @@ function ReportIssuePage() {
           {step === 2 ? (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">
-                {lang === "en" ? "2. Describe the issue" : "2. समस्या बताएं"}
+                {tr("2. Describe the issue", "2. समस्या बताएं")}
               </h2>
               <p className="text-muted-foreground">
-                {lang === "en"
-                  ? "Write in simple words: what is wrong, since when, and who is affected."
-                  : "सरल शब्दों में लिखें: क्या समस्या है, कब से है, और किसे परेशानी है।"}
+                {tr("Write in simple words: what is wrong, since when, and who is affected.", "सरल शब्दों में लिखें: क्या समस्या है, कब से है, और किसे परेशानी है।")}
               </p>
               <div className="space-y-2">
-                <Label htmlFor="title">{lang === "en" ? "Title" : "शीर्षक"}</Label>
+                <Label htmlFor="title">{tr("Title", "शीर्षक")}</Label>
                 <Input
                   id="title"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="h-12 text-base"
                   placeholder={
-                    lang === "en" ? "Garbage not collected in Ward 24" : "वार्ड 24 में कचरा नहीं उठा"
+                    tr("Garbage not collected in Ward 24", "वार्ड 24 में कचरा नहीं उठा")
                   }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">{lang === "en" ? "Description" : "विवरण"}</Label>
+                <Label htmlFor="description">{tr("Description", "विवरण")}</Label>
                 <Textarea
                   id="description"
                   rows={6}
@@ -357,7 +381,7 @@ function ReportIssuePage() {
               </div>
               <Button type="button" variant="outline" disabled className="w-full sm:w-auto">
                 <Mic className="size-4" />
-                {lang === "en" ? "Voice note (coming soon)" : "वॉइस नोट (जल्द)"}
+                {tr("Voice note (coming soon)", "वॉइस नोट (जल्द)")}
               </Button>
             </div>
           ) : null}
@@ -365,60 +389,130 @@ function ReportIssuePage() {
           {step === 3 ? (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">
-                {lang === "en" ? "3. Add evidence" : "3. प्रमाण जोड़ें"}
+                {tr("3. Add evidence", "3. प्रमाण जोड़ें")}
               </h2>
               <div className="space-y-2">
-                <Label htmlFor="photo">
-                  {lang === "en" ? "Take or upload a photo / document" : "फोटो या दस्तावेज़ जोड़ें"}
-                </Label>
-                <Input
-                  id="photo"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  capture="environment"
-                  onChange={pickFile}
-                  className="h-12 py-2.5 text-base"
-                />
-              </div>
-              {preview ? (
-                <div className="space-y-2">
-                  <img
-                    src={preview}
-                    alt={lang === "en" ? "Selected evidence preview" : "चयनित प्रमाण"}
-                    className="max-h-64 w-full rounded-md object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setFile(null);
-                      setPreview(null);
-                    }}
-                  >
-                    <Trash2 className="size-4" /> {lang === "en" ? "Remove" : "हटाएँ"}
-                  </Button>
-                </div>
-              ) : (
-                <p className="flex items-center gap-2 text-muted-foreground">
-                  <Camera className="size-4" aria-hidden="true" />
-                  {lang === "en" ? "A photo helps officers act faster." : "फोटो से कार्रवाई तेज होती है।"}
+                <Label htmlFor="photos">{tr("Add photos (1 to 5)")}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {tr("JPG, JPEG, PNG or WEBP. Maximum 5 MB each.")}
                 </p>
-              )}
+                {images.length > 0 ? (
+                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {images.map((img, i) => (
+                      <li key={img.url} className="relative overflow-hidden rounded-md border">
+                        <img
+                          src={img.url}
+                          alt={tr("Selected photo {n}", undefined, { n: i + 1 })}
+                          className="aspect-square w-full object-cover"
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => removeImage(i)}
+                          aria-label={tr("Remove photo {n}", undefined, { n: i + 1 })}
+                          className="absolute right-1 top-1 size-9"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {images.length < MAX_IMAGES ? (
+                  <label
+                    htmlFor="photos"
+                    className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed p-3 text-base font-medium hover:bg-muted"
+                  >
+                    <ImagePlus className="size-5" aria-hidden="true" />
+                    {images.length === 0 ? tr("Choose photos") : tr("Add more photos")}
+                  </label>
+                ) : null}
+                <input
+                  id="photos"
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                  onChange={pickImages}
+                  className="sr-only"
+                />
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  {images.length > 0
+                    ? tr("{n} of 5 photos selected", undefined, { n: images.length })
+                    : null}
+                </p>
+                {images.length === 0 ? (
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Camera className="size-4" aria-hidden="true" />
+                    {tr("A photo helps officers act faster.", "फोटो से कार्रवाई तेज होती है।")}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2 border-t pt-4">
+                <Label htmlFor="video">{tr("Add a short video (optional)")}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {tr("Optional: upload a short video only if it helps explain the issue.")}{" "}
+                  {tr("MP4, MOV or WEBM. Maximum 20 MB.")}
+                </p>
+                {video ? (
+                  <div className="flex items-center gap-3 rounded-md border p-3">
+                    <Video className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{video.name}</p>
+                      <p className="text-sm text-muted-foreground">{formatBytes(video.size)}</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setVideo(null)}>
+                      <Trash2 className="size-4" /> {tr("Remove video")}
+                    </Button>
+                  </div>
+                ) : (
+                  <Input
+                    id="video"
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+                    onChange={pickVideo}
+                    className="h-12 py-2.5 text-base"
+                  />
+                )}
+              </div>
+
+              {mediaError ? (
+                <p role="alert" className="rounded-md bg-destructive/10 p-3 text-destructive">
+                  {mediaError}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
           {step === 4 ? (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">
-                {lang === "en" ? "4. Add location" : "4. स्थान जोड़ें"}
+                {tr("4. Add location", "4. स्थान जोड़ें")}
               </h2>
               <Button type="button" variant="outline" onClick={useMyLocation}>
                 <MapPin className="size-4" />
-                {lang === "en" ? "Use my current location" : "मेरा वर्तमान स्थान लें"}
+                {tr("Use my current location", "मेरा वर्तमान स्थान लें")}
               </Button>
+              <div className="space-y-2">
+                <Label>{tr("Area type")}</Label>
+                <div className="flex gap-2">
+                  {(["urban", "rural"] as const).map((v) => (
+                    <Button
+                      key={v}
+                      type="button"
+                      variant={form.area_type === v ? "default" : "outline"}
+                      className="h-12 flex-1 text-base"
+                      onClick={() => setForm({ ...form, area_type: v })}
+                    >
+                      {v === "urban" ? tr("Urban (city / town)") : tr("Rural (village)")}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="district-select">{lang === "en" ? "District" : "जिला"}</Label>
+                  <Label htmlFor="district-select">{tr("District", "जिला")}</Label>
                   <Select
                     value={form.district}
                     onValueChange={(v) => setForm({ ...form, district: v })}
@@ -437,7 +531,7 @@ function ReportIssuePage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="block">
-                    {lang === "en" ? "Block / Municipality" : "प्रखंड / नगरपालिका"}
+                    {tr("Block / Municipality", "प्रखंड / नगरपालिका")}
                   </Label>
                   <Input
                     id="block"
@@ -448,7 +542,7 @@ function ReportIssuePage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ward">
-                    {lang === "en" ? "Village / Ward" : "गाँव / वार्ड"}
+                    {tr("Village / Ward", "गाँव / वार्ड")}
                   </Label>
                   <Input
                     id="ward"
@@ -459,7 +553,7 @@ function ReportIssuePage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="latlng">
-                    {lang === "en" ? "Map pin (latitude, longitude)" : "मानचित्र बिंदु"}
+                    {tr("Map pin (latitude, longitude)", "मानचित्र बिंदु")}
                   </Label>
                   <Input
                     id="latlng"
@@ -476,7 +570,7 @@ function ReportIssuePage() {
               {form.latitude && form.longitude ? (
                 <div className="rounded-md bg-muted p-4 text-sm">
                   <MapPin className="mr-2 inline size-4 text-primary" aria-hidden="true" />
-                  {lang === "en" ? "Map pin set at" : "स्थान चिह्नित"} {form.latitude},{" "}
+                  {tr("Map pin set at", "स्थान चिह्नित")} {form.latitude},{" "}
                   {form.longitude}
                 </div>
               ) : null}
@@ -486,27 +580,33 @@ function ReportIssuePage() {
           {step === 5 ? (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">
-                {lang === "en" ? "5. Review and submit" : "5. जाँचें और जमा करें"}
+                {tr("5. Review and submit", "5. जाँचें और जमा करें")}
               </h2>
               <dl className="grid gap-2 rounded-md bg-muted p-4 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{lang === "en" ? "Category" : "श्रेणी"}</dt>
+                  <dt className="text-muted-foreground">{tr("Category", "श्रेणी")}</dt>
                   <dd className="font-medium">{pick(CATEGORY_LABELS[form.category_key])}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{lang === "en" ? "Title" : "शीर्षक"}</dt>
+                  <dt className="text-muted-foreground">{tr("Title", "शीर्षक")}</dt>
                   <dd className="font-medium">{form.title}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{lang === "en" ? "Location" : "स्थान"}</dt>
+                  <dt className="text-muted-foreground">{tr("Location", "स्थान")}</dt>
                   <dd className="font-medium">
                     {[form.village_or_ward, form.block, form.district].filter(Boolean).join(", ")}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{lang === "en" ? "Photo" : "फोटो"}</dt>
+                  <dt className="text-muted-foreground">{tr("Photos", "फोटो")}</dt>
                   <dd className="font-medium">
-                    {file ? file.name : lang === "en" ? "Not added" : "नहीं जोड़ा"}
+                    {images.length > 0 ? images.length : tr("Not added", "नहीं जोड़ा")}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">{tr("Video")}</dt>
+                  <dd className="truncate font-medium">
+                    {video ? video.name : tr("Not added", "नहीं जोड़ा")}
                   </dd>
                 </div>
               </dl>
@@ -514,29 +614,27 @@ function ReportIssuePage() {
               <div className="rounded-lg border border-accent/40 bg-accent/8 p-4">
                 <p className="flex items-center gap-2 font-semibold text-accent">
                   <Sparkles className="size-5" aria-hidden="true" />
-                  {lang === "en"
-                    ? "AI suggestion — pending human approval"
-                    : "एआई सुझाव — अधिकारी की स्वीकृति शेष"}
+                  {tr("AI suggestion — pending human approval", "एआई सुझाव — अधिकारी की स्वीकृति शेष")}
                 </p>
                 <ul className="mt-3 grid gap-1 text-sm">
                   <li>
-                    {lang === "en" ? "Category" : "श्रेणी"}: <b>{suggestion.category_label}</b>
+                    {tr("Category", "श्रेणी")}: <b>{suggestion.category_label}</b>
                   </li>
                   <li>
-                    {lang === "en" ? "Suggested priority" : "सुझाई प्राथमिकता"}:{" "}
+                    {tr("Suggested priority", "सुझाई प्राथमिकता")}:{" "}
                     <b>{suggestion.priority}</b>
                   </li>
                   <li>
-                    {lang === "en" ? "Possible duplicates" : "संभावित डुप्लिकेट"}:{" "}
+                    {tr("Possible duplicates", "संभावित डुप्लिकेट")}:{" "}
                     <b>{suggestion.duplicate_count}</b>
                   </li>
                   <li>
-                    {lang === "en" ? "Suggested department" : "सुझाया विभाग"}:{" "}
+                    {tr("Suggested department", "सुझाया विभाग")}:{" "}
                     <b>{suggestion.recommended_department}</b>
                   </li>
                   <li>{suggestion.location_relevance}</li>
                   <li>
-                    {lang === "en" ? "Next action" : "अगला कदम"}: {suggestion.next_action}
+                    {tr("Next action", "अगला कदम")}: {suggestion.next_action}
                   </li>
                 </ul>
               </div>
@@ -572,9 +670,7 @@ function ReportIssuePage() {
         </div>
 
         <p className="mt-3 text-sm text-muted-foreground">
-          {lang === "en"
-            ? "Offline drafts are stored in this browser only (prototype offline support)."
-            : "ऑफलाइन ड्राफ्ट केवल इसी ब्राउज़र में सहेजे जाते हैं (प्रोटोटाइप सुविधा)।"}
+          {tr("Offline drafts are stored in this browser only (prototype offline support).", "ऑफलाइन ड्राफ्ट केवल इसी ब्राउज़र में सहेजे जाते हैं (प्रोटोटाइप सुविधा)।")}
         </p>
       </div>
     </Page>
