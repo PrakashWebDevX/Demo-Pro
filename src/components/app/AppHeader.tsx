@@ -74,10 +74,11 @@ export function AppHeader() {
         <Link to="/" className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="flex size-11 items-center justify-center rounded-md bg-primary-foreground/12 ring-1 ring-primary-foreground/25"
+            className="flex size-11 items-center justify-center overflow-hidden rounded-md bg-primary-foreground/12 ring-1 ring-primary-foreground/25 p-1"
           >
-            <Landmark className="size-6" />
+            <img src="/logo.png" alt="Eco-Bridge logo" className="size-8 object-contain" />
           </span>
+
           <span className="leading-tight">
             <span className="block text-lg font-bold">{t("app_name")}</span>
             <span className="block text-xs text-primary-foreground/80">{t("app_tagline")}</span>
