@@ -76,7 +76,7 @@ export function AppHeader() {
             aria-hidden="true"
             className="flex size-11 items-center justify-center overflow-hidden rounded-md bg-primary-foreground/12 ring-1 ring-primary-foreground/25 p-1"
           >
-            <img src="/logo.png" alt="Eco-Bridge logo" className="size-8 object-contain" />
+            <img src="/favicon.ico" alt="Eco-Bridge logo" className="size-8 object-contain" />
           </span>
 
           <span className="leading-tight">
