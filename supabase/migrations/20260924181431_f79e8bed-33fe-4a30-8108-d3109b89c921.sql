@@ -1,0 +1,1 @@
+SELECT setval('public.report_public_seq', (SELECT COALESCE(MAX(NULLIF(regexp_replace(public_issue_id, '^JH-\d{4}-', ''), '')::int), 0) FROM public.reports), true);
