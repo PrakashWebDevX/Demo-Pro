@@ -16,6 +16,7 @@ import { AuthProvider } from "../lib/auth";
 import { ThemeProvider } from "../lib/theme";
 import { Toaster } from "../components/ui/sonner";
 import { supabase } from "../integrations/supabase/client";
+import { PwaRuntime } from "../components/app/PwaRuntime";
 
 function NotFoundComponent() {
   return (
@@ -82,11 +83,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Eco-Bridge" },
+      { name: "theme-color", content: "#0F2B46" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { title: "ECO-BRIDGE | Citizen Issues to Community Solutions" },
       {
         name: "description",
         content:
-          "Report civic issues in Jharkhand, track government action and follow innovation challenges.",
+          "A citizen-first platform that connects local issues with government action, innovation partners, and measurable community solutions.",
       },
       { property: "og:title", content: "Eco-Bridge" },
       {
@@ -105,7 +109,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -152,6 +158,7 @@ function RootComponent() {
           <AuthEvents queryClient={queryClient} />
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
+          <PwaRuntime />
           <Toaster richColors position="top-center" />
         </AuthProvider>
       </LanguageProvider>

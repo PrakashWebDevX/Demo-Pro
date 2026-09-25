@@ -25,15 +25,16 @@ import { useLang } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { VerticalWorkflowTimeline } from "@/components/app/VerticalWorkflowTimeline";
+import { InstallAppButton } from "@/components/app/PwaRuntime";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Eco-Bridge — Report civic issues, track action" },
+      { title: "ECO-BRIDGE | Citizen Issues to Community Solutions" },
       {
         name: "description",
         content:
-          "Citizens of Jharkhand can report local problems, track government action and follow innovation challenges in one mobile-friendly platform.",
+          "A citizen-first platform that connects local issues with government action, innovation partners, and measurable community solutions.",
       },
       { property: "og:title", content: "Eco-Bridge" },
       {
@@ -126,6 +127,7 @@ function Landing() {
               </Link>
             </Button>
           </div>
+          <InstallAppButton />
         </div>
         <div className="relative min-h-64 lg:min-h-full">
           <img
