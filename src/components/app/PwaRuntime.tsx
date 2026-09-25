@@ -17,20 +17,26 @@ function isStandalone() {
 }
 
 export function PwaRuntime() {
-  const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/service-worker.js").catch(() => undefined);
     }
 
+    const syncConnectionState = () => setOffline(!navigator.onLine);
     const goOnline = () => setOffline(false);
     const goOffline = () => setOffline(true);
+    syncConnectionState();
     window.addEventListener("online", goOnline);
     window.addEventListener("offline", goOffline);
+    window.addEventListener("pageshow", syncConnectionState);
+    document.addEventListener("visibilitychange", syncConnectionState);
     return () => {
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
+      window.removeEventListener("pageshow", syncConnectionState);
+      document.removeEventListener("visibilitychange", syncConnectionState);
     };
   }, []);
 

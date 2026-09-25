@@ -1,4 +1,4 @@
-const CACHE_NAME = "eco-bridge-shell-v1";
+const CACHE_NAME = "eco-bridge-shell-v2";
 const APP_SHELL = [
   "/",
   "/offline.html",
