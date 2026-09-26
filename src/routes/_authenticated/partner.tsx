@@ -34,6 +34,7 @@ import {
   submitMappedPartnerUpdate,
   fetchMappedPartnerUpdates,
   fetchMappedTeamRoles,
+  fetchUniversityVerifications,
   type PartnerInvitation,
 } from "@/lib/challenges";
 
@@ -62,6 +63,11 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
     queryKey: ["mapped-partner-invitations", organization?.id],
     queryFn: () => fetchMappedPartnerInvitations(organization!.id),
     enabled: Boolean(organization?.id),
+  });
+  const { data: verificationRows = [] } = useQuery({
+    queryKey: ["mapped-partner-verification", organization?.id],
+    queryFn: () => fetchUniversityVerifications([organization!.id]),
+    enabled: university && Boolean(organization?.id),
   });
   const challengeIds = invitations.flatMap((inv) => inv.challenge ? [inv.challenge.id] : []);
   const { data: updates = [] } = useQuery({
@@ -99,6 +105,7 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
   return (
     <Page title={university ? "University Partner Portal" : "Industry / Startup Partner Portal"} description={organization.name}>
       <p className="text-sm text-muted-foreground">Demo account workspace. Only explicitly mapped and invited challenges are shown.</p>
+      {university ? <p className="mt-2 text-sm text-muted-foreground">Verification status: {verificationRows[0]?.verification_status ?? "unverified"}</p> : null}
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <StatCard label="Invited challenges" value={invitations.filter((x) => x.invitation_status === "sent").length} tone="accent" />
         <StatCard label="Accepted / Active" value={invitations.filter((x) => x.invitation_status === "accepted").length} tone="success" />
@@ -130,7 +137,7 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
             ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               <Button asChild variant="outline"><Link to="/challenges/$id" params={{ id: inv.challenge.id }}>View challenge</Link></Button>
-              {inv.invitation_status === "sent" ? <>
+              {inv.invitation_status === "sent" || inv.invitation_status === "invited" ? <>
                 <Button onClick={() => void respond(inv.id, true)}>Accept Invitation</Button>
                 <Button variant="outline" onClick={() => void respond(inv.id, false)}>Decline</Button>
                 <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, "clarification_request")}>Request Clarification</Button>

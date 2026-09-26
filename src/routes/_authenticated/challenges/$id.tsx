@@ -42,6 +42,7 @@ import {
   scorePartner,
   sendInvitations,
   setStage,
+  fetchUniversityVerifications,
   type Challenge,
   type ChallengePartnerRow,
   type ChallengeStage,
@@ -196,6 +197,13 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
   });
 
   const partners = dir?.partners ?? [];
+  const universityPartnerIds = partners.filter((partner) => partner.partner_kind === "university").map((partner) => partner.id);
+  const { data: universityVerifications = [] } = useQuery({
+    queryKey: ["challenge-university-verifications", c.id, universityPartnerIds.join(",")],
+    queryFn: () => fetchUniversityVerifications(universityPartnerIds),
+    enabled: universityPartnerIds.length > 0,
+  });
+  const verificationByPartner = new Map(universityVerifications.map((verification) => [verification.partner_id, verification]));
   const names = useMemo(() => Object.fromEntries(partners.map((p) => [p.id, p.name])), [partners]);
 
   const ranked = useMemo(() => {
@@ -325,6 +333,8 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
                     const role = ROLE_FOR_GROUP[g];
                     const isSel = selected[role] === p.id;
                     const inv = rows.find((r) => r.partner_id === p.id)?.invitation_status;
+                    const verification = verificationByPartner.get(p.id);
+                    const invitationEligible = g !== "university" || (verification?.verification_status === "verified" && verification.eligibility_to_invite && p.active_status);
                     return (
                       <div key={p.id} className={`rounded-lg border p-4 ${isSel ? "border-accent" : ""}`}>
                         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -334,7 +344,7 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
                           </div>
                           <div className="text-right">
                             <p className="text-2xl font-bold text-accent">{score}%</p>
-                            <span className="rounded bg-muted px-2 py-0.5 text-xs">Demo Partner Data</span>
+                            <span className="rounded bg-muted px-2 py-0.5 text-xs">{g === "university" ? `Verification: ${verification?.verification_status ?? "unverified"}` : "Demo Partner Data"}</span>
                           </div>
                         </div>
                         <p className="mt-2 text-sm"><b>Expertise:</b> {p.expertise_labels.join(", ")}</p>
@@ -347,12 +357,13 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
                         ) : null}
                         <div className="mt-3 flex flex-wrap items-center gap-4">
                           <label className="flex items-center gap-2 text-sm">
-                            <Checkbox checked={!!shortlist[p.id]} onCheckedChange={(v) => setShortlist((s) => ({ ...s, [p.id]: !!v }))} />
+                            <Checkbox disabled={!invitationEligible} checked={!!shortlist[p.id]} onCheckedChange={(v) => setShortlist((s) => ({ ...s, [p.id]: !!v }))} />
                             Shortlist
                           </label>
-                          <Button size="sm" variant={isSel ? "default" : "outline"} onClick={() => setSelected((s) => ({ ...s, [role]: isSel ? null : p.id }))}>
+                          <Button size="sm" disabled={!invitationEligible} variant={isSel ? "default" : "outline"} onClick={() => setSelected((s) => ({ ...s, [role]: isSel ? null : p.id }))}>
                             {isSel ? `Selected as ${ROLE_LABELS[role]}` : `Select as ${ROLE_LABELS[role]}`}
                           </Button>
+                          {g === "university" && !invitationEligible ? <span className="text-xs text-warning-foreground">Verify university before inviting</span> : null}
                           {inv && inv !== "none" ? <span className="text-sm capitalize text-muted-foreground">Invitation: {inv}</span> : null}
                         </div>
                       </div>

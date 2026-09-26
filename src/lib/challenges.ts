@@ -375,12 +375,67 @@ export async function sendInvitations(c: Challenge, rows: ChallengePartnerRow[],
   const targets = rows.filter((r) => r.selected_role && r.invitation_status !== "accepted");
   if (targets.length === 0) throw new Error("Select at least one partner first.");
   for (const t of targets) {
-    await db.from("innovation_challenge_partners").update({ invitation_status: "sent", updated_at: new Date().toISOString() }).eq("id", t.id);
+    if (t.selected_role === "lead_university") {
+      const { error } = await db.rpc("send_university_invitation", {
+        _challenge_id: c.id,
+        _partner_id: t.partner_id,
+        _university_role: "Lead Research Partner",
+        _expected_contribution: "Research, prototype evaluation, and pilot impact analysis.",
+        _target_date: null,
+        _scope: "Non-sensitive innovation challenge collaboration scope.",
+      });
+      if (error) throw error;
+    } else {
+      const { error } = await db.from("innovation_challenge_partners").update({ invitation_status: "sent", updated_at: new Date().toISOString() }).eq("id", t.id);
+      if (error) throw error;
+    }
   }
   const list = targets.map((t) => names[t.partner_id] ?? "partner").join(", ");
   await addTimeline(c.id, { title: "Collaboration invitation sent", detail: list, isPublic: false, by });
   await notifyStaff(c, `Invitation sent: ${c.challenge_code}`, `Collaboration invitation sent to ${list} (demo).`);
   if (c.stage === "approved") await setStage(c, "partner_matching", by);
+}
+
+export interface UniversityVerification {
+  partner_id: string;
+  verification_status: "unverified" | "verification_pending" | "verified" | "verification_rejected" | "inactive";
+  verification_source_type: string;
+  verification_reference_id: string | null;
+  verification_note: string | null;
+  verified_at: string | null;
+  verified_by_profile_id: string | null;
+  eligibility_to_invite: boolean;
+  demo_note: string;
+}
+
+export async function fetchUniversityVerifications(partnerIds?: string[]) {
+  let query = db.from("innovation_partner_verifications").select("*");
+  if (partnerIds?.length) query = query.in("partner_id", partnerIds);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as UniversityVerification[];
+}
+
+export async function setUniversityVerification(args: {
+  partnerId: string;
+  status: UniversityVerification["verification_status"];
+  sourceType: string;
+  referenceId?: string;
+  referenceUrl?: string;
+  note?: string;
+  eligible: boolean;
+}) {
+  const { data, error } = await db.rpc("set_university_verification", {
+    _partner_id: args.partnerId,
+    _status: args.status,
+    _source_type: args.sourceType,
+    _reference_url: args.referenceUrl ?? null,
+    _reference_id: args.referenceId ?? null,
+    _note: args.note ?? null,
+    _eligible: args.eligible,
+  });
+  if (error) throw error;
+  return data as UniversityVerification;
 }
 
 export async function markResponse(c: Challenge, row: ChallengePartnerRow, accepted: boolean, by: string, partnerName: string) {
@@ -560,7 +615,7 @@ export async function fetchMappedPartnerInvitations(partnerId: string): Promise<
     .from("innovation_challenge_partners")
     .select("*, innovation_challenges(*)")
     .eq("partner_id", partnerId)
-    .in("invitation_status", ["sent", "accepted", "declined"])
+    .in("invitation_status", ["sent", "invited", "accepted", "active_team", "declined"])
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((row: ChallengePartnerRow & { innovation_challenges: Challenge | null }) => ({

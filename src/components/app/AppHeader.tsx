@@ -70,6 +70,9 @@ export function AppHeader() {
         ...(role === "officer" || role === "dept_admin" || role === "admin"
           ? [{ to: "/officer", label: tr("Operations Dashboard", "संचालन डैशबोर्ड") }]
           : []),
+        ...(role === "officer" || role === "dept_admin" || role === "admin"
+          ? [{ to: "/officer/universities", label: tr("University Verification", "विश्वविद्यालय सत्यापन") }]
+          : []),
         { to: ROLE_HOME[role ?? "citizen"] ?? "/citizen", label: t("dashboard") },
         ...(role === "citizen"
           ? [{ to: "/offline-reports", label: tr("Saved Offline Reports", "ऑफलाइन शिकायतें") }]

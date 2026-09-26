@@ -28,6 +28,7 @@ import { Route as AuthenticatedChallengesIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedChallengesIdRouteImport } from './routes/_authenticated/challenges/$id'
 import { Route as AuthenticatedOfficerIndexRouteImport } from './routes/_authenticated/officer/index'
 import { Route as AuthenticatedOfficerIdRouteImport } from './routes/_authenticated/officer/$id'
+import { Route as AuthenticatedOfficerUniversitiesRouteImport } from './routes/_authenticated/officer/universities'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
 import { Route as AuthenticatedReportsIdRouteImport } from './routes/_authenticated/reports/$id'
 
@@ -130,6 +131,12 @@ const AuthenticatedOfficerIdRoute = AuthenticatedOfficerIdRouteImport.update({
   path: '/officer/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOfficerUniversitiesRoute =
+  AuthenticatedOfficerUniversitiesRouteImport.update({
+    id: '/officer/universities',
+    path: '/officer/universities',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReportsIndexRoute =
   AuthenticatedReportsIndexRouteImport.update({
     id: '/reports/',
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/innovation/': typeof InnovationIndexRoute
   '/challenges/$id': typeof AuthenticatedChallengesIdRoute
   '/officer/$id': typeof AuthenticatedOfficerIdRoute
+  '/officer/universities': typeof AuthenticatedOfficerUniversitiesRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
   '/challenges/': typeof AuthenticatedChallengesIndexRoute
   '/officer/': typeof AuthenticatedOfficerIndexRoute
@@ -181,6 +189,7 @@ export interface FileRoutesByTo {
   '/innovation': typeof InnovationIndexRoute
   '/challenges/$id': typeof AuthenticatedChallengesIdRoute
   '/officer/$id': typeof AuthenticatedOfficerIdRoute
+  '/officer/universities': typeof AuthenticatedOfficerUniversitiesRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
   '/challenges': typeof AuthenticatedChallengesIndexRoute
   '/officer': typeof AuthenticatedOfficerIndexRoute
@@ -205,6 +214,7 @@ export interface FileRoutesById {
   '/innovation/': typeof InnovationIndexRoute
   '/_authenticated/challenges/$id': typeof AuthenticatedChallengesIdRoute
   '/_authenticated/officer/$id': typeof AuthenticatedOfficerIdRoute
+  '/_authenticated/officer/universities': typeof AuthenticatedOfficerUniversitiesRoute
   '/_authenticated/reports/$id': typeof AuthenticatedReportsIdRoute
   '/_authenticated/challenges/': typeof AuthenticatedChallengesIndexRoute
   '/_authenticated/officer/': typeof AuthenticatedOfficerIndexRoute
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/innovation/'
     | '/challenges/$id'
     | '/officer/$id'
+    | '/officer/universities'
     | '/reports/$id'
     | '/challenges/'
     | '/officer/'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/innovation'
     | '/challenges/$id'
     | '/officer/$id'
+    | '/officer/universities'
     | '/reports/$id'
     | '/challenges'
     | '/officer'
@@ -274,6 +286,7 @@ export interface FileRouteTypes {
     | '/innovation/'
     | '/_authenticated/challenges/$id'
     | '/_authenticated/officer/$id'
+    | '/_authenticated/officer/universities'
     | '/_authenticated/reports/$id'
     | '/_authenticated/challenges/'
     | '/_authenticated/officer/'
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOfficerIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/officer/universities': {
+      id: '/_authenticated/officer/universities'
+      path: '/officer/universities'
+      fullPath: '/officer/universities'
+      preLoaderRoute: typeof AuthenticatedOfficerUniversitiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports/': {
       id: '/_authenticated/reports/'
       path: '/reports'
@@ -453,6 +473,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
   AuthenticatedChallengesIdRoute: typeof AuthenticatedChallengesIdRoute
   AuthenticatedOfficerIdRoute: typeof AuthenticatedOfficerIdRoute
+  AuthenticatedOfficerUniversitiesRoute: typeof AuthenticatedOfficerUniversitiesRoute
   AuthenticatedReportsIdRoute: typeof AuthenticatedReportsIdRoute
   AuthenticatedChallengesIndexRoute: typeof AuthenticatedChallengesIndexRoute
   AuthenticatedOfficerIndexRoute: typeof AuthenticatedOfficerIndexRoute
@@ -470,6 +491,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportRoute: AuthenticatedReportRoute,
   AuthenticatedChallengesIdRoute: AuthenticatedChallengesIdRoute,
   AuthenticatedOfficerIdRoute: AuthenticatedOfficerIdRoute,
+  AuthenticatedOfficerUniversitiesRoute: AuthenticatedOfficerUniversitiesRoute,
   AuthenticatedReportsIdRoute: AuthenticatedReportsIdRoute,
   AuthenticatedChallengesIndexRoute: AuthenticatedChallengesIndexRoute,
   AuthenticatedOfficerIndexRoute: AuthenticatedOfficerIndexRoute,
