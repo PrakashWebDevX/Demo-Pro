@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSelect } from "./LanguageSelect";
 import { THEME_OPTIONS, useTheme, type ThemeChoice } from "@/lib/theme";
+import { deleteOfflineReportsForUser, listOfflineReports } from "@/lib/offline-reports";
 import {
   Sheet,
   SheetContent,
@@ -46,6 +47,18 @@ export function AppHeader() {
   const queryClient = useQueryClient();
 
   async function handleSignOut() {
+    if (user) {
+      const savedReports = await listOfflineReports(user.id);
+      if (savedReports.length > 0) {
+        const remove = window.confirm(
+          tr(
+            "Remove saved offline drafts from this device?",
+            "इस डिवाइस से सहेजे गए ऑफलाइन ड्राफ्ट हटाएँ?",
+          ),
+        );
+        if (remove) await deleteOfflineReportsForUser(user.id);
+      }
+    }
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
@@ -55,6 +68,9 @@ export function AppHeader() {
   const links: Array<{ to: string; label: string }> = user
     ? [
         { to: ROLE_HOME[role ?? "citizen"] ?? "/citizen", label: t("dashboard") },
+        ...(role === "citizen"
+          ? [{ to: "/offline-reports", label: tr("Saved Offline Reports", "ऑफलाइन शिकायतें") }]
+          : []),
         { to: "/innovation", label: t("innovation") },
         { to: "/challenges", label: tr("My Challenges", "मेरी चुनौतियाँ") },
         { to: "/impact", label: tr("Impact", "प्रभाव") },

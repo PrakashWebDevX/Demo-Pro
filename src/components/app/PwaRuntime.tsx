@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Download, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
+import { syncOfflineReports } from "@/lib/offline-reports";
+import { useQueryClient } from "@tanstack/react-query";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -17,6 +20,8 @@ function isStandalone() {
 }
 
 export function PwaRuntime() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -25,25 +30,44 @@ export function PwaRuntime() {
     }
 
     const syncConnectionState = () => setOffline(!navigator.onLine);
+    const syncQueuedReports = async () => {
+      if (!navigator.onLine || !user) return;
+      try {
+        const results = await syncOfflineReports(user.id);
+        if (results.some((record) => record.syncState === "sent")) {
+          await queryClient.invalidateQueries({ queryKey: ["my-reports", user.id] });
+          toast.success("Saved offline reports synced successfully.");
+        }
+      } catch {
+        // A later online or manual sync can retry the retained records.
+      }
+    };
     const goOnline = () => setOffline(false);
     const goOffline = () => setOffline(true);
     syncConnectionState();
+    void syncQueuedReports();
     window.addEventListener("online", goOnline);
+    window.addEventListener("online", syncQueuedReports);
     window.addEventListener("offline", goOffline);
     window.addEventListener("pageshow", syncConnectionState);
+    window.addEventListener("pageshow", syncQueuedReports);
     document.addEventListener("visibilitychange", syncConnectionState);
+    document.addEventListener("visibilitychange", syncQueuedReports);
     return () => {
       window.removeEventListener("online", goOnline);
+      window.removeEventListener("online", syncQueuedReports);
       window.removeEventListener("offline", goOffline);
       window.removeEventListener("pageshow", syncConnectionState);
+      window.removeEventListener("pageshow", syncQueuedReports);
       document.removeEventListener("visibilitychange", syncConnectionState);
+      document.removeEventListener("visibilitychange", syncQueuedReports);
     };
-  }, []);
+  }, [queryClient, user]);
 
   return offline ? (
     <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center gap-2 bg-primary px-4 py-3 text-center text-sm text-primary-foreground shadow-lg">
       <WifiOff className="size-4 shrink-0" aria-hidden="true" />
-      <span>You are offline. Saved information will be available when your connection returns.</span>
+      <span>You are offline. Your report will be saved on this device and sent when internet returns.</span>
     </div>
   ) : null;
 }

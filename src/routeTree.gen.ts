@@ -19,6 +19,7 @@ import { Route as AuthenticatedCitizenRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDepartmentRouteImport } from './routes/_authenticated/department'
 import { Route as AuthenticatedImpactRouteImport } from './routes/_authenticated/impact'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedOfflineReportsRouteImport } from './routes/_authenticated/offline-reports'
 import { Route as AuthenticatedPartnerRouteImport } from './routes/_authenticated/partner'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
 import { Route as InnovationIndexRouteImport } from './routes/innovation/index'
@@ -78,6 +79,12 @@ const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
     path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOfflineReportsRoute =
+  AuthenticatedOfflineReportsRouteImport.update({
+    id: '/offline-reports',
+    path: '/offline-reports',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPartnerRoute = AuthenticatedPartnerRouteImport.update({
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/department': typeof AuthenticatedDepartmentRoute
   '/impact': typeof AuthenticatedImpactRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/offline-reports': typeof AuthenticatedOfflineReportsRoute
   '/partner': typeof AuthenticatedPartnerRoute
   '/report': typeof AuthenticatedReportRoute
   '/innovation/$id': typeof InnovationIdRoute
@@ -166,6 +174,7 @@ export interface FileRoutesByTo {
   '/department': typeof AuthenticatedDepartmentRoute
   '/impact': typeof AuthenticatedImpactRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/offline-reports': typeof AuthenticatedOfflineReportsRoute
   '/partner': typeof AuthenticatedPartnerRoute
   '/report': typeof AuthenticatedReportRoute
   '/innovation/$id': typeof InnovationIdRoute
@@ -189,6 +198,7 @@ export interface FileRoutesById {
   '/_authenticated/department': typeof AuthenticatedDepartmentRoute
   '/_authenticated/impact': typeof AuthenticatedImpactRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/offline-reports': typeof AuthenticatedOfflineReportsRoute
   '/_authenticated/partner': typeof AuthenticatedPartnerRoute
   '/_authenticated/report': typeof AuthenticatedReportRoute
   '/innovation/$id': typeof InnovationIdRoute
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/department'
     | '/impact'
     | '/notifications'
+    | '/offline-reports'
     | '/partner'
     | '/report'
     | '/innovation/$id'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/department'
     | '/impact'
     | '/notifications'
+    | '/offline-reports'
     | '/partner'
     | '/report'
     | '/innovation/$id'
@@ -255,6 +267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/department'
     | '/_authenticated/impact'
     | '/_authenticated/notifications'
+    | '/_authenticated/offline-reports'
     | '/_authenticated/partner'
     | '/_authenticated/report'
     | '/innovation/$id'
@@ -349,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/offline-reports': {
+      id: '/_authenticated/offline-reports'
+      path: '/offline-reports'
+      fullPath: '/offline-reports'
+      preLoaderRoute: typeof AuthenticatedOfflineReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/partner': {
       id: '/_authenticated/partner'
       path: '/partner'
@@ -428,6 +448,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDepartmentRoute: typeof AuthenticatedDepartmentRoute
   AuthenticatedImpactRoute: typeof AuthenticatedImpactRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedOfflineReportsRoute: typeof AuthenticatedOfflineReportsRoute
   AuthenticatedPartnerRoute: typeof AuthenticatedPartnerRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
   AuthenticatedChallengesIdRoute: typeof AuthenticatedChallengesIdRoute
@@ -444,6 +465,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDepartmentRoute: AuthenticatedDepartmentRoute,
   AuthenticatedImpactRoute: AuthenticatedImpactRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedOfflineReportsRoute: AuthenticatedOfflineReportsRoute,
   AuthenticatedPartnerRoute: AuthenticatedPartnerRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
   AuthenticatedChallengesIdRoute: AuthenticatedChallengesIdRoute,
