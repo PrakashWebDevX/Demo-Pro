@@ -43,9 +43,6 @@ import {
 } from "@/lib/media";
 
 export const Route = createFileRoute("/_authenticated/report")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    offlineId: typeof search.offlineId === "string" ? search.offlineId : undefined,
-  }),
   component: ReportIssuePage,
 });
 

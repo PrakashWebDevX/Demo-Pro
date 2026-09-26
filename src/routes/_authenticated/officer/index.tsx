@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, Page, StatCard } from "@/components/app/Page";
@@ -15,18 +16,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLang } from "@/lib/i18n";
+import { useAuth, isStaffRole } from "@/lib/auth";
 import { fetchReports } from "@/lib/reports";
 import { CATEGORY_KEYS, CATEGORY_LABELS, DISTRICTS, STATUS_LABELS } from "@/lib/constants";
+import { CHALLENGE_STAGE_LABELS } from "@/lib/challenges";
+import { fetchOperationsDashboard, subscribeOperationsDashboard } from "@/lib/operations";
 
 export const Route = createFileRoute("/_authenticated/officer/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: typeof search.status === "string" ? search.status : undefined,
+    priority: typeof search.priority === "string" ? search.priority : undefined,
+  }),
   component: OfficerDashboard,
 });
 
 function OfficerDashboard() {
+  const { role } = useAuth();
   const { lang, t, pick } = useLang();
+  const searchParams = Route.useSearch();
   const [district, setDistrict] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [priority, setPriority] = useState("all");
+  const [status, setStatus] = useState(searchParams.status ?? "all");
+  const [priority, setPriority] = useState(searchParams.priority ?? "all");
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -34,7 +44,22 @@ function OfficerDashboard() {
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["all-reports"],
     queryFn: () => fetchReports(),
+    enabled: isStaffRole(role),
   });
+
+  const operations = useQuery({
+    queryKey: ["operations-dashboard"],
+    queryFn: fetchOperationsDashboard,
+    enabled: isStaffRole(role),
+    refetchInterval: 60_000,
+  });
+
+  useEffect(() => {
+    if (!isStaffRole(role)) return;
+    return subscribeOperationsDashboard(() => {
+      void operations.refetch();
+    });
+  }, [operations.refetch, role]);
 
   const stats = useMemo(() => {
     const resolved = reports.filter((r) => r.status === "resolved" && r.resolved_at);
@@ -58,6 +83,10 @@ function OfficerDashboard() {
       avgDays: avgDays ? `${avgDays.toFixed(1)} ${lang === "en" ? "days" : "दिन"}` : "—",
     };
   }, [reports, lang]);
+
+  if (!isStaffRole(role)) {
+    return <Page title={lang === "en" ? "Access restricted" : "पहुंच प्रतिबंधित"}><EmptyState title={lang === "en" ? "This dashboard is for government staff." : "यह डैशबोर्ड सरकारी कर्मचारियों के लिए है।"} /></Page>;
+  }
 
   const filtered = useMemo(
     () =>
@@ -91,6 +120,23 @@ function OfficerDashboard() {
       }
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="col-span-full flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold">{lang === "en" ? "Operations Overview" : "संचालन अवलोकन"}</h2>
+          <Button type="button" variant="outline" onClick={() => void operations.refetch()} disabled={operations.isFetching}>
+            {operations.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        </div>
+        {operations.isLoading ? <p className="col-span-full text-muted-foreground">Loading operations data…</p> : null}
+        {operations.error ? <p className="col-span-full rounded-md bg-destructive/10 p-3 text-destructive">Could not load operations data. Check the connected database schema and RLS.</p> : null}
+        {operations.data ? <>
+          <DashboardLink label="Total Reports" value={operations.data.overview.total} href="/officer" />
+          <DashboardLink label="Simple Issues" value={operations.data.overview.simple} href="/officer?status=submitted" />
+          <DashboardLink label="Innovation Problems" value={operations.data.overview.innovation} href="/innovation" />
+          <DashboardLink label="Needs Review" value={operations.data.overview.needsReview} href="/officer?status=under_review" tone="accent" />
+          <DashboardLink label="High / Critical Priority" value={operations.data.overview.highCritical} href="/officer?priority=high" tone="warning" />
+          <DashboardLink label="Resolved This Month" value={operations.data.overview.resolvedThisMonth} href="/officer?status=resolved" tone="success" />
+          <DashboardLink label="Overdue" value={operations.data.overview.overdue} href="/officer" tone="warning" />
+        </> : null}
         <StatCard label={lang === "en" ? "New Reports" : "नई शिकायतें"} value={stats.newReports} />
         <StatCard
           label={lang === "en" ? "High Priority" : "उच्च प्राथमिकता"}
@@ -111,6 +157,36 @@ function OfficerDashboard() {
           tone="accent"
         />
       </div>
+
+      {operations.data ? (
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <InsightPanel title="Simple Issues — Direct Government Action">
+            <CountList values={operations.data.simple} labels={{ ...Object.fromEntries(Object.entries(STATUS_LABELS).map(([key, label]) => [key, pick(label)])), overdue: "Overdue" }} hrefPrefix="/officer?status=" />
+          </InsightPanel>
+          <InsightPanel title="Innovation Problems — Long-Term Community Solutions">
+            <CountList values={operations.data.innovation} labels={CHALLENGE_STAGE_LABELS} hrefPrefix="/innovation" />
+          </InsightPanel>
+          <InsightPanel title="Area and Category Insights">
+            <p>Urban: <strong>{operations.data.areas.urban}</strong> · Rural: <strong>{operations.data.areas.rural}</strong></p>
+            <p className="mt-2">{operations.data.areas.districts.slice(0, 3).map((item) => `${item.name}: ${item.count}`).join(" · ") || "No area data"}</p>
+            <p className="mt-2">Top categories: {operations.data.categories.slice(0, 3).map((item) => `${pick(CATEGORY_LABELS[item.key]) || item.key} (${item.count})`).join(", ") || "No category data"}</p>
+            <p className="mt-2">Priority: {operations.data.priorities.map((item) => `${item.key} (${item.count})`).join(", ") || "No priority data"}</p>
+          </InsightPanel>
+        </div>
+      ) : null}
+
+      {operations.data ? (
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <InsightPanel title="Department Workload">
+            {operations.data.departments.length > 0 ? operations.data.departments.map((department) => (
+              <div key={department.id} className="flex justify-between gap-3 border-b py-2 last:border-0"><span>{department.name}</span><span className="font-semibold">{department.open} open · {department.total} total</span></div>
+            )) : <p className="text-muted-foreground">No department workload data.</p>}
+          </InsightPanel>
+          <InsightPanel title="My Work Queue">
+            <p className="text-muted-foreground">Individual officer queue will be available after officer account mapping is configured.</p>
+          </InsightPanel>
+        </div>
+      ) : null}
 
       <div className="card-surface mt-6 grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-2">
@@ -200,6 +276,18 @@ function OfficerDashboard() {
       <Pagination page={page} pageCount={pageCount} total={filtered.length} onPage={setPage} />
     </Page>
   );
+}
+
+function DashboardLink({ label, value, href, tone }: { label: string; value: number; href: string; tone?: "default" | "warning" | "success" | "accent" }) {
+  return <a href={href}><StatCard label={label} value={value} tone={tone} /></a>;
+}
+
+function InsightPanel({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="card-surface p-4"><h2 className="text-lg font-bold">{title}</h2><div className="mt-3 text-sm">{children}</div></section>;
+}
+
+function CountList({ values, labels, hrefPrefix }: { values: Record<string, number>; labels: Record<string, string>; hrefPrefix: string }) {
+  return <div>{Object.entries(values).map(([key, value]) => <a key={key} href={hrefPrefix === "/innovation" || key === "overdue" ? (hrefPrefix === "/innovation" ? "/innovation" : "/officer") : `${hrefPrefix}${key}`} className="flex justify-between border-b py-2 last:border-0"><span>{labels[key] ?? key}</span><strong>{value}</strong></a>)}</div>;
 }
 
 function FilterSelect({

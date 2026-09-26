@@ -101,9 +101,9 @@ function OfflineReportsPage() {
               {record.syncState !== "sent" ? (
                 <>
                   <Button asChild type="button" variant="outline" size="sm">
-                    <Link to="/report" search={{ offlineId: record.offlineLocalId }}>
+                    <a href={`/report?offlineId=${encodeURIComponent(record.offlineLocalId)}`}>
                       <Edit3 className="size-4" /> {tr("Edit")}
-                    </Link>
+                    </a>
                   </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => retry(record.offlineLocalId)} disabled={busy || !navigator.onLine}>
                     <RefreshCw className="size-4" /> {tr("Retry")}

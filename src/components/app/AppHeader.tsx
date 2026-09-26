@@ -67,6 +67,9 @@ export function AppHeader() {
 
   const links: Array<{ to: string; label: string }> = user
     ? [
+        ...(role === "officer" || role === "dept_admin" || role === "admin"
+          ? [{ to: "/officer", label: tr("Operations Dashboard", "संचालन डैशबोर्ड") }]
+          : []),
         { to: ROLE_HOME[role ?? "citizen"] ?? "/citizen", label: t("dashboard") },
         ...(role === "citizen"
           ? [{ to: "/offline-reports", label: tr("Saved Offline Reports", "ऑफलाइन शिकायतें") }]
