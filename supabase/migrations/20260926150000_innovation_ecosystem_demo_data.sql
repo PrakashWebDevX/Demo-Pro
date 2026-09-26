@@ -78,14 +78,18 @@ ON CONFLICT (name) DO UPDATE SET
 INSERT INTO public.reports
   (public_issue_id, demo_owner_email, reporter_name, title, description, category_key, district, area_type, priority, status, is_innovation)
 VALUES
-  ('JH-ECO-DEMO-WASTE-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Overflowing bins at Central Market', 'Demo Data — Verification and institutional consent required before production use. Repeated market-bin overflow is used only to illustrate the Smart Waste Overflow Prediction challenge.', 'waste', 'Central City', 'urban', 'high', 'submitted', true),
-  ('JH-ECO-DEMO-WASTE-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Waste collection route delay at Central Market', 'Demo Data — Verification and institutional consent required before production use.', 'waste', 'Central City', 'urban', 'medium', 'submitted', true),
-  ('JH-ECO-DEMO-WATER-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Handpump reliability in Greenfield village', 'Demo Data — Verification and institutional consent required before production use. This fictional record illustrates rural water monitoring.', 'water', 'Greenfield', 'rural', 'high', 'submitted', true),
-  ('JH-ECO-DEMO-WATER-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Delayed rural handpump repair', 'Demo Data — Verification and institutional consent required before production use.', 'water', 'Greenfield', 'rural', 'medium', 'submitted', true),
-  ('JH-ECO-DEMO-ROAD-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Near-miss incidents at Central Bus Stand Junction', 'Demo Data — Verification and institutional consent required before production use. This fictional record illustrates road-safety analytics.', 'safety', 'Central City', 'urban', 'high', 'submitted', true),
-  ('JH-ECO-DEMO-ROAD-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Unsafe crossing pattern at Central Bus Stand Junction', 'Demo Data — Verification and institutional consent required before production use.', 'safety', 'Central City', 'urban', 'medium', 'submitted', true),
-  ('JH-ECO-DEMO-LIGHT-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Repeated streetlight faults in Central City wards', 'Demo Data — Verification and institutional consent required before production use. This fictional record illustrates fault detection and energy saving.', 'streetlight', 'Central City', 'urban', 'high', 'submitted', true),
-  ('JH-ECO-DEMO-LIGHT-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Delayed streetlight fault resolution', 'Demo Data — Verification and institutional consent required before production use.', 'streetlight', 'Central City', 'urban', 'medium', 'submitted', true)
+  ('DEMO-WASTE-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Waste bin overflowing near Central Market gate', 'Demo Data — Verification and institutional consent required before production use. Citizens cannot walk near the overflowing bin because of waste and smell. Evidence: fictional image placeholder.', 'waste', 'Central City', 'urban', 'high', 'submitted', true),
+  ('DEMO-WASTE-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Garbage collection missed near vegetable market', 'Demo Data — Verification and institutional consent required before production use. The fictional collection vehicle did not arrive and the bins are full again.', 'waste', 'Central City', 'urban', 'high', 'submitted', true),
+  ('DEMO-WASTE-003', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Repeated waste overflow on market-side lane', 'Demo Data — Verification and institutional consent required before production use. The fictional lane overflows every weekend despite routine cleaning.', 'waste', 'Central City', 'urban', 'medium', 'submitted', true),
+  ('DEMO-WATER-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Handpump not working in Greenfield Village', 'Demo Data — Verification and institutional consent required before production use. This fictional handpump failure forces families to walk farther for water.', 'water', 'Greenfield', 'rural', 'high', 'submitted', true),
+  ('DEMO-WATER-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Water supply stops near village school', 'Demo Data — Verification and institutional consent required before production use. This fictional service interruption returns after temporary repair.', 'water', 'Greenfield', 'rural', 'high', 'submitted', true),
+  ('DEMO-WATER-003', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Delayed rural handpump repair update', 'Demo Data — Verification and institutional consent required before production use.', 'water', 'Greenfield', 'rural', 'medium', 'submitted', true),
+  ('DEMO-SAFETY-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Unsafe pedestrian crossing near Central Bus Stand', 'Demo Data — Verification and institutional consent required before production use. This fictional junction has poor crossing visibility during peak hours.', 'safety', 'Central City', 'urban', 'high', 'submitted', true),
+  ('DEMO-SAFETY-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Traffic congestion and unsafe turn near bus stand', 'Demo Data — Verification and institutional consent required before production use. This fictional junction mixes buses, autos, and pedestrians.', 'safety', 'Central City', 'urban', 'high', 'submitted', true),
+  ('DEMO-SAFETY-003', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Near-miss incidents at Central Bus Stand Junction', 'Demo Data — Verification and institutional consent required before production use.', 'safety', 'Central City', 'urban', 'medium', 'submitted', true),
+  ('DEMO-LIGHT-001', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Streetlights off on Ward 12 main road', 'Demo Data — Verification and institutional consent required before production use. Three fictional streetlights have not worked for several days.', 'streetlight', 'Central City', 'urban', 'high', 'submitted', true),
+  ('DEMO-LIGHT-002', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Streetlight switches off near community centre', 'Demo Data — Verification and institutional consent required before production use. The fictional light fails again after temporary repair.', 'streetlight', 'Central City', 'urban', 'medium', 'submitted', true),
+  ('DEMO-LIGHT-003', 'ecosystem-demo@demo.invalid', 'Demo Ecosystem Record', 'Dark walking route in Ward 12', 'Demo Data — Verification and institutional consent required before production use.', 'streetlight', 'Central City', 'urban', 'medium', 'submitted', true)
 ON CONFLICT (public_issue_id) DO NOTHING;
 
 -- Challenges are public-safe summaries only; staff-only records are stored separately below.
@@ -93,10 +97,10 @@ INSERT INTO public.innovation_challenges
   (challenge_code, title, problem_statement, public_summary, category_key, category_label, area_type, district, location,
    priority, related_report_count, department_name, officer_name, solution, target_metric, expected_impact, stage, progress_pct, is_public, is_demo)
 VALUES
-  ('IC-ECO-DEMO-WASTE', 'Smart Waste Overflow Prediction for Central Market', 'Fictional recurring overflow at Central Market is being studied for a predictive collection workflow.', 'Demo Data — Verification and institutional consent required before production use. A fictional smart-bin and route-planning challenge for Central Market.', 'waste', 'Waste Management', 'urban', 'Central City', 'Central Market', 'high', 2, 'Municipal Waste Management Department', 'Ravi Kumar', 'Fictional fill-level sensing and collection-route planning.', 'Reduce overflow reports by 40% in 90 days', 'Fictional measurable reduction in overflow reports.', 'prototype', 55, true, true),
-  ('IC-ECO-DEMO-WATER', 'Rural Water Reliability and Handpump Monitoring', 'Fictional rural handpump interruptions are being studied for earlier detection and repair routing.', 'Demo Data — Verification and institutional consent required before production use. A fictional rural water reliability challenge for Greenfield.', 'water', 'Water Supply', 'rural', 'Greenfield', 'Greenfield villages', 'high', 2, 'Rural Water and Sanitation Department', 'Mohan Lal', 'Fictional low-connectivity handpump monitoring and response workflow.', 'Reduce repair response time by 30% in 120 days', 'Fictional improvement in repair response time.', 'research', 38, true, true),
-  ('IC-ECO-DEMO-ROAD', 'Smart Road Safety for Central Bus Stand Junction', 'Fictional near-miss patterns at a busy junction are being studied for safer movement and decision support.', 'Demo Data — Verification and institutional consent required before production use. A fictional road-safety challenge for Central Bus Stand Junction.', 'safety', 'Public Safety', 'urban', 'Central City', 'Central Bus Stand Junction', 'high', 2, 'Urban Public Safety and Traffic Department', 'Arjun Singh', 'Fictional near-miss mapping and junction-risk analysis.', 'Reduce reported near-miss incidents by 25%', 'Fictional reduction in reported near-miss incidents.', 'partner_matching', 22, true, true),
-  ('IC-ECO-DEMO-LIGHT', 'Smart Streetlight Fault Detection and Energy Saving', 'Fictional repeated streetlight faults are being studied for earlier detection and lower energy waste.', 'Demo Data — Verification and institutional consent required before production use. A fictional streetlight reliability challenge for Central City wards.', 'streetlight', 'Streetlight', 'urban', 'Central City', 'Central City wards', 'high', 2, 'Streetlight and Electrical Maintenance Department', 'Meera Iyer', 'Fictional fault detection and energy-monitoring workflow.', 'Reduce fault-resolution time by 35% in 90 days', 'Fictional improvement in fault-resolution time and energy use.', 'field_pilot', 70, true, true)
+  ('INN-2026-001', 'Smart Waste Overflow Prediction for Central Market', 'Fictional recurring overflow at Central Market is being studied for a predictive collection workflow.', 'Demo Data — Verification and institutional consent required before production use. A fictional smart-bin and route-planning challenge for Central Market.', 'waste', 'Waste Management', 'urban', 'Central City', 'Central Market, Ward 8', 'high', 18, 'Municipal Waste Management Department', 'Ravi Kumar', 'Fictional fill-level sensing and collection-route planning.', 'Reduce overflow reports by 40% in 90 days', 'Fictional measurable reduction in overflow reports.', 'prototype', 55, true, true),
+  ('INN-2026-002', 'Rural Water Reliability and Handpump Monitoring', 'Fictional rural handpump interruptions are being studied for earlier detection and repair routing.', 'Demo Data — Verification and institutional consent required before production use. A fictional rural water reliability challenge for Greenfield.', 'water', 'Water Supply', 'rural', 'Greenfield', 'Greenfield Block, 3 villages', 'high', 12, 'Rural Water and Sanitation Department', 'Mohan Lal', 'Fictional low-connectivity handpump monitoring and response workflow.', 'Reduce repair response time by 30% in 120 days', 'Fictional improvement in repair response time.', 'research', 38, true, true),
+  ('INN-2026-003', 'Smart Road Safety for Central Bus Stand Junction', 'Fictional near-miss patterns at a busy junction are being studied for safer movement and decision support.', 'Demo Data — Verification and institutional consent required before production use. A fictional road-safety challenge for Central Bus Stand Junction.', 'safety', 'Public Safety', 'urban', 'Central City', 'Central Bus Stand Junction', 'high', 9, 'Urban Public Safety and Traffic Department', 'Arjun Singh', 'Fictional near-miss mapping and junction-risk analysis.', 'Reduce reported near-miss incidents by 25%', 'Fictional reduction in reported near-miss incidents.', 'partner_matching', 22, true, true),
+  ('INN-2026-004', 'Smart Streetlight Fault Detection and Energy Saving', 'Fictional repeated streetlight faults are being studied for earlier detection and lower energy waste.', 'Demo Data — Verification and institutional consent required before production use. A fictional streetlight reliability challenge for Central City wards.', 'streetlight', 'Streetlight', 'urban', 'Central City', 'Ward 12, Central City', 'high', 11, 'Streetlight and Electrical Maintenance Department', 'Meera Iyer', 'Fictional fault detection and energy-monitoring workflow.', 'Reduce fault-resolution time by 35% in 90 days', 'Fictional improvement in fault-resolution time and energy use.', 'field_pilot', 70, true, true)
 ON CONFLICT (challenge_code) DO UPDATE SET
   title = EXCLUDED.title,
   public_summary = EXCLUDED.public_summary,
@@ -111,28 +115,29 @@ INSERT INTO public.innovation_challenge_reports (challenge_id, report_id)
 SELECT c.id, r.id
 FROM public.innovation_challenges c
 JOIN public.reports r ON r.public_issue_id IN (
-  CASE c.challenge_code WHEN 'IC-ECO-DEMO-WASTE' THEN 'JH-ECO-DEMO-WASTE-001' WHEN 'IC-ECO-DEMO-WATER' THEN 'JH-ECO-DEMO-WATER-001' WHEN 'IC-ECO-DEMO-ROAD' THEN 'JH-ECO-DEMO-ROAD-001' WHEN 'IC-ECO-DEMO-LIGHT' THEN 'JH-ECO-DEMO-LIGHT-001' END,
-  CASE c.challenge_code WHEN 'IC-ECO-DEMO-WASTE' THEN 'JH-ECO-DEMO-WASTE-002' WHEN 'IC-ECO-DEMO-WATER' THEN 'JH-ECO-DEMO-WATER-002' WHEN 'IC-ECO-DEMO-ROAD' THEN 'JH-ECO-DEMO-ROAD-002' WHEN 'IC-ECO-DEMO-LIGHT' THEN 'JH-ECO-DEMO-LIGHT-002' END
+  CASE c.challenge_code WHEN 'INN-2026-001' THEN 'DEMO-WASTE-001' WHEN 'INN-2026-002' THEN 'DEMO-WATER-001' WHEN 'INN-2026-003' THEN 'DEMO-SAFETY-001' WHEN 'INN-2026-004' THEN 'DEMO-LIGHT-001' END,
+  CASE c.challenge_code WHEN 'INN-2026-001' THEN 'DEMO-WASTE-002' WHEN 'INN-2026-002' THEN 'DEMO-WATER-002' WHEN 'INN-2026-003' THEN 'DEMO-SAFETY-002' WHEN 'INN-2026-004' THEN 'DEMO-LIGHT-002' END,
+  CASE c.challenge_code WHEN 'INN-2026-001' THEN 'DEMO-WASTE-003' WHEN 'INN-2026-002' THEN 'DEMO-WATER-003' WHEN 'INN-2026-003' THEN 'DEMO-SAFETY-003' WHEN 'INN-2026-004' THEN 'DEMO-LIGHT-003' END
 )
-WHERE c.challenge_code IN ('IC-ECO-DEMO-WASTE','IC-ECO-DEMO-WATER','IC-ECO-DEMO-ROAD','IC-ECO-DEMO-LIGHT')
+WHERE c.challenge_code IN ('INN-2026-001','INN-2026-002','INN-2026-003','INN-2026-004')
 ON CONFLICT DO NOTHING;
 
 -- Existing matching rows reuse the current invitation_status values; detailed badges/history are staff-only below.
 INSERT INTO public.innovation_challenge_partners (challenge_id, partner_id, group_key, match_score, match_reason, shortlisted, selected_role, invitation_status)
 SELECT c.id, p.id, x.group_key, x.match_score, 'Demo Data — Verification and institutional consent required before production use. Fictional match rationale.', true, x.selected_role, x.invitation_status
 FROM (VALUES
-  ('IC-ECO-DEMO-WASTE','Central City Institute of Technology','university',88,'lead_university','accepted'),
-  ('IC-ECO-DEMO-WASTE','GreenRoute Technologies','industry',92,'tech_partner','accepted'),
-  ('IC-ECO-DEMO-WASTE','CleanCity Community Foundation','csr',78,'csr_partner','sent'),
-  ('IC-ECO-DEMO-WATER','Regional Engineering College','university',90,'lead_university','accepted'),
-  ('IC-ECO-DEMO-WATER','AquaSense Solutions','industry',86,'tech_partner','sent'),
-  ('IC-ECO-DEMO-WATER','RuralConnect Foundation','csr',80,'csr_partner','none'),
-  ('IC-ECO-DEMO-ROAD','Digital Innovation University','university',89,'lead_university','sent'),
-  ('IC-ECO-DEMO-ROAD','SafeStreet Mobility Labs','industry',91,'tech_partner','none'),
-  ('IC-ECO-DEMO-ROAD','City Mobility CSR Forum','csr',76,'csr_partner','none'),
-  ('IC-ECO-DEMO-LIGHT','Central City Institute of Technology','university',87,'lead_university','accepted'),
-  ('IC-ECO-DEMO-LIGHT','LuminaGrid Systems','industry',94,'tech_partner','accepted'),
-  ('IC-ECO-DEMO-LIGHT','Bright Communities CSR Initiative','csr',82,'csr_partner','accepted')
+  ('INN-2026-001','Central City Institute of Technology','university',88,'lead_university','accepted'),
+  ('INN-2026-001','GreenRoute Technologies','industry',92,'tech_partner','accepted'),
+  ('INN-2026-001','CleanCity Community Foundation','csr',78,'csr_partner','sent'),
+  ('INN-2026-002','Regional Engineering College','university',90,'lead_university','accepted'),
+  ('INN-2026-002','AquaSense Solutions','industry',86,'tech_partner','sent'),
+  ('INN-2026-002','RuralConnect Foundation','csr',80,'csr_partner','none'),
+  ('INN-2026-003','Digital Innovation University','university',89,'lead_university','sent'),
+  ('INN-2026-003','SafeStreet Mobility Labs','industry',91,'tech_partner','none'),
+  ('INN-2026-003','City Mobility CSR Forum','csr',76,'csr_partner','none'),
+  ('INN-2026-004','Central City Institute of Technology','university',87,'lead_university','accepted'),
+  ('INN-2026-004','LuminaGrid Systems','industry',94,'tech_partner','accepted'),
+  ('INN-2026-004','Bright Communities CSR Initiative','csr',82,'csr_partner','accepted')
 ) AS x(challenge_code, partner_name, group_key, match_score, selected_role, invitation_status)
 JOIN public.innovation_challenges c ON c.challenge_code = x.challenge_code
 JOIN public.innovation_partners p ON p.name = x.partner_name
@@ -149,26 +154,26 @@ INSERT INTO public.innovation_challenge_team_roles
 SELECT c.id, p.id, x.role_key, x.role_label, x.display_name, x.organization_name, x.member_count, x.status,
   'Demo Data — Verification and institutional consent required before production use.'
 FROM (VALUES
-  ('IC-ECO-DEMO-WASTE','government_owner','Government Owner','Ravi Kumar','Municipal Waste Management Department',NULL,'Active Team'),
-  ('IC-ECO-DEMO-WASTE','faculty_mentor','Faculty Mentor','Dr. Asha Menon — Demo Faculty Profile','Central City Institute of Technology',NULL,'Accepted'),
-  ('IC-ECO-DEMO-WASTE','student_team','Student Innovation Team','EcoSense Student Innovation Team','Central City Institute of Technology',5,'Active Team'),
-  ('IC-ECO-DEMO-WASTE','technology_partner','Technology Partner','GreenRoute Technologies','GreenRoute Technologies',NULL,'Active Team'),
-  ('IC-ECO-DEMO-WASTE','csr_partner','CSR Partner','CleanCity Community Foundation','CleanCity Community Foundation',NULL,'Invited'),
-  ('IC-ECO-DEMO-WATER','government_owner','Government Owner','Mohan Lal','Rural Water and Sanitation Department',NULL,'Active Team'),
-  ('IC-ECO-DEMO-WATER','faculty_mentor','Faculty Mentor','Dr. R. K. Iyer — Demo Faculty Profile','Regional Engineering College',NULL,'Active Team'),
-  ('IC-ECO-DEMO-WATER','student_team','Student Innovation Team','JalRakshak Student Innovation Team','Regional Engineering College',4,'Active Team'),
-  ('IC-ECO-DEMO-WATER','technology_partner','Technology Partner','AquaSense Solutions','AquaSense Solutions',NULL,'Invited'),
-  ('IC-ECO-DEMO-WATER','csr_partner','CSR Partner','RuralConnect Foundation','RuralConnect Foundation',NULL,'Potential Partner'),
-  ('IC-ECO-DEMO-ROAD','government_owner','Government Owner','Arjun Singh','Urban Public Safety and Traffic Department',NULL,'Active Team'),
-  ('IC-ECO-DEMO-ROAD','faculty_mentor','Faculty Mentor','Dr. Neha Varma — Demo Faculty Profile','Digital Innovation University',NULL,'Invited'),
-  ('IC-ECO-DEMO-ROAD','student_team','Student Innovation Team','SafeRoute Student Innovation Team','Digital Innovation University',6,'Invited'),
-  ('IC-ECO-DEMO-ROAD','technology_partner','Technology Partner','SafeStreet Mobility Labs','SafeStreet Mobility Labs',NULL,'Potential Partner'),
-  ('IC-ECO-DEMO-ROAD','csr_partner','CSR Partner','City Mobility CSR Forum','City Mobility CSR Forum',NULL,'Potential Partner'),
-  ('IC-ECO-DEMO-LIGHT','government_owner','Government Owner','Meera Iyer','Streetlight and Electrical Maintenance Department',NULL,'Active Team'),
-  ('IC-ECO-DEMO-LIGHT','faculty_mentor','Faculty Mentor','Dr. Vivek Rao — Demo Faculty Profile','Central City Institute of Technology',NULL,'Active Team'),
-  ('IC-ECO-DEMO-LIGHT','student_team','Student Innovation Team','LightWatch Student Innovation Team','Central City Institute of Technology',5,'Active Team'),
-  ('IC-ECO-DEMO-LIGHT','technology_partner','Technology Partner','LuminaGrid Systems','LuminaGrid Systems',NULL,'Active Team'),
-  ('IC-ECO-DEMO-LIGHT','csr_partner','CSR Partner','Bright Communities CSR Initiative','Bright Communities CSR Initiative',NULL,'Accepted')
+  ('INN-2026-001','government_owner','Government Owner','Ravi Kumar','Municipal Waste Management Department',NULL,'Active Team'),
+  ('INN-2026-001','faculty_mentor','Faculty Mentor','Dr. Asha Menon — Demo Faculty Profile','Central City Institute of Technology',NULL,'Accepted'),
+  ('INN-2026-001','student_team','Student Innovation Team','EcoSense Student Innovation Team','Central City Institute of Technology',5,'Active Team'),
+  ('INN-2026-001','technology_partner','Technology Partner','GreenRoute Technologies','GreenRoute Technologies',NULL,'Active Team'),
+  ('INN-2026-001','csr_partner','CSR Partner','CleanCity Community Foundation','CleanCity Community Foundation',NULL,'Invited'),
+  ('INN-2026-002','government_owner','Government Owner','Mohan Lal','Rural Water and Sanitation Department',NULL,'Active Team'),
+  ('INN-2026-002','faculty_mentor','Faculty Mentor','Dr. R. K. Iyer — Demo Faculty Profile','Regional Engineering College',NULL,'Active Team'),
+  ('INN-2026-002','student_team','Student Innovation Team','JalRakshak Student Innovation Team','Regional Engineering College',4,'Active Team'),
+  ('INN-2026-002','technology_partner','Technology Partner','AquaSense Solutions','AquaSense Solutions',NULL,'Invited'),
+  ('INN-2026-002','csr_partner','CSR Partner','RuralConnect Foundation','RuralConnect Foundation',NULL,'Potential Partner'),
+  ('INN-2026-003','government_owner','Government Owner','Arjun Singh','Urban Public Safety and Traffic Department',NULL,'Active Team'),
+  ('INN-2026-003','faculty_mentor','Faculty Mentor','Dr. Neha Varma — Demo Faculty Profile','Digital Innovation University',NULL,'Invited'),
+  ('INN-2026-003','student_team','Student Innovation Team','SafeRoute Student Innovation Team','Digital Innovation University',6,'Invited'),
+  ('INN-2026-003','technology_partner','Technology Partner','SafeStreet Mobility Labs','SafeStreet Mobility Labs',NULL,'Potential Partner'),
+  ('INN-2026-003','csr_partner','CSR Partner','City Mobility CSR Forum','City Mobility CSR Forum',NULL,'Potential Partner'),
+  ('INN-2026-004','government_owner','Government Owner','Meera Iyer','Streetlight and Electrical Maintenance Department',NULL,'Active Team'),
+  ('INN-2026-004','faculty_mentor','Faculty Mentor','Dr. Vivek Rao — Demo Faculty Profile','Central City Institute of Technology',NULL,'Active Team'),
+  ('INN-2026-004','student_team','Student Innovation Team','LightWatch Student Innovation Team','Central City Institute of Technology',5,'Active Team'),
+  ('INN-2026-004','technology_partner','Technology Partner','LuminaGrid Systems','LuminaGrid Systems',NULL,'Active Team'),
+  ('INN-2026-004','csr_partner','CSR Partner','Bright Communities CSR Initiative','Bright Communities CSR Initiative',NULL,'Accepted')
 ) AS x(challenge_code, role_key, role_label, display_name, organization_name, member_count, status)
 JOIN public.innovation_challenges c ON c.challenge_code = x.challenge_code
 LEFT JOIN public.innovation_partners p ON p.name = x.organization_name
@@ -185,26 +190,26 @@ ON CONFLICT (challenge_id, role_key) DO UPDATE SET
 INSERT INTO public.innovation_challenge_partner_status_history (challenge_id, partner_id, status, note)
 SELECT c.id, p.id, x.status, 'Demo Data — Verification and institutional consent required before production use. Fictional invitation history.'
 FROM (VALUES
-  ('IC-ECO-DEMO-WASTE','Central City Institute of Technology','Accepted'),
-  ('IC-ECO-DEMO-WASTE','Central City Institute of Technology','Active Team'),
-  ('IC-ECO-DEMO-WASTE','GreenRoute Technologies','Accepted'),
-  ('IC-ECO-DEMO-WASTE','GreenRoute Technologies','Active Team'),
-  ('IC-ECO-DEMO-WASTE','CleanCity Community Foundation','Potential Partner'),
-  ('IC-ECO-DEMO-WASTE','CleanCity Community Foundation','Invited'),
-  ('IC-ECO-DEMO-WATER','Regional Engineering College','Accepted'),
-  ('IC-ECO-DEMO-WATER','Regional Engineering College','Active Team'),
-  ('IC-ECO-DEMO-WATER','AquaSense Solutions','Potential Partner'),
-  ('IC-ECO-DEMO-WATER','AquaSense Solutions','Invited'),
-  ('IC-ECO-DEMO-WATER','RuralConnect Foundation','Potential Partner'),
-  ('IC-ECO-DEMO-ROAD','Digital Innovation University','Potential Partner'),
-  ('IC-ECO-DEMO-ROAD','Digital Innovation University','Invited'),
-  ('IC-ECO-DEMO-ROAD','SafeStreet Mobility Labs','Potential Partner'),
-  ('IC-ECO-DEMO-ROAD','City Mobility CSR Forum','Potential Partner'),
-  ('IC-ECO-DEMO-LIGHT','Central City Institute of Technology','Accepted'),
-  ('IC-ECO-DEMO-LIGHT','Central City Institute of Technology','Active Team'),
-  ('IC-ECO-DEMO-LIGHT','LuminaGrid Systems','Accepted'),
-  ('IC-ECO-DEMO-LIGHT','LuminaGrid Systems','Active Team'),
-  ('IC-ECO-DEMO-LIGHT','Bright Communities CSR Initiative','Accepted')
+  ('INN-2026-001','Central City Institute of Technology','Accepted'),
+  ('INN-2026-001','Central City Institute of Technology','Active Team'),
+  ('INN-2026-001','GreenRoute Technologies','Accepted'),
+  ('INN-2026-001','GreenRoute Technologies','Active Team'),
+  ('INN-2026-001','CleanCity Community Foundation','Potential Partner'),
+  ('INN-2026-001','CleanCity Community Foundation','Invited'),
+  ('INN-2026-002','Regional Engineering College','Accepted'),
+  ('INN-2026-002','Regional Engineering College','Active Team'),
+  ('INN-2026-002','AquaSense Solutions','Potential Partner'),
+  ('INN-2026-002','AquaSense Solutions','Invited'),
+  ('INN-2026-002','RuralConnect Foundation','Potential Partner'),
+  ('INN-2026-003','Digital Innovation University','Potential Partner'),
+  ('INN-2026-003','Digital Innovation University','Invited'),
+  ('INN-2026-003','SafeStreet Mobility Labs','Potential Partner'),
+  ('INN-2026-003','City Mobility CSR Forum','Potential Partner'),
+  ('INN-2026-004','Central City Institute of Technology','Accepted'),
+  ('INN-2026-004','Central City Institute of Technology','Active Team'),
+  ('INN-2026-004','LuminaGrid Systems','Accepted'),
+  ('INN-2026-004','LuminaGrid Systems','Active Team'),
+  ('INN-2026-004','Bright Communities CSR Initiative','Accepted')
 ) AS x(challenge_code, partner_name, status)
 JOIN public.innovation_challenges c ON c.challenge_code = x.challenge_code
 JOIN public.innovation_partners p ON p.name = x.partner_name
@@ -216,10 +221,10 @@ SELECT c.id, x.pilot_location, x.timeline_text,
   'Demo Data — Verification and institutional consent required before production use. Fictional internal planning note.',
   NULL, 'Demo Operations Team'
 FROM (VALUES
-  ('IC-ECO-DEMO-WASTE','Central Market, Central City','90-day fictional prototype and measurement window.'),
-  ('IC-ECO-DEMO-WATER','Selected Greenfield villages','120-day fictional research and field validation window.'),
-  ('IC-ECO-DEMO-ROAD','Central Bus Stand Junction','Fictional partner-matching and pilot-readiness review.'),
-  ('IC-ECO-DEMO-LIGHT','Selected Central City wards','90-day fictional field-pilot and measurement window.')
+  ('INN-2026-001','Central Market, Central City','90-day fictional prototype and measurement window.'),
+  ('INN-2026-002','Selected Greenfield villages','120-day fictional research and field validation window.'),
+  ('INN-2026-003','Central Bus Stand Junction','Fictional partner-matching and pilot-readiness review.'),
+  ('INN-2026-004','Selected Central City wards','90-day fictional field-pilot and measurement window.')
 ) AS x(challenge_code, pilot_location, timeline_text)
 JOIN public.innovation_challenges c ON c.challenge_code = x.challenge_code
 ON CONFLICT (challenge_id) DO UPDATE SET
@@ -233,18 +238,18 @@ ON CONFLICT (challenge_id) DO UPDATE SET
 INSERT INTO public.innovation_challenge_timeline (challenge_id, stage, title, detail, step_status, is_public, sort_order, created_by_name)
 SELECT c.id, x.stage, x.title, 'Demo Data — Verification and institutional consent required before production use. Fictional timeline entry.', x.step_status, true, x.sort_order, 'Demo Operations Team'
 FROM (VALUES
-  ('IC-ECO-DEMO-WASTE','approved','Government review completed','completed',1),
-  ('IC-ECO-DEMO-WASTE','partner_matching','Fictional ecosystem partners shortlisted','completed',2),
-  ('IC-ECO-DEMO-WASTE','prototype','Prototype development','in_progress',3),
-  ('IC-ECO-DEMO-WATER','government_review','Government review completed','completed',1),
-  ('IC-ECO-DEMO-WATER','research','Research planning','in_progress',2),
-  ('IC-ECO-DEMO-WATER','field_pilot','Field validation planned','upcoming',3),
-  ('IC-ECO-DEMO-ROAD','government_review','Government review completed','completed',1),
-  ('IC-ECO-DEMO-ROAD','partner_matching','Partner matching','in_progress',2),
-  ('IC-ECO-DEMO-ROAD','prototype','Prototype planning','upcoming',3),
-  ('IC-ECO-DEMO-LIGHT','approved','Government review completed','completed',1),
-  ('IC-ECO-DEMO-LIGHT','prototype','Prototype completed','completed',2),
-  ('IC-ECO-DEMO-LIGHT','field_pilot','Field pilot','in_progress',3)
+  ('INN-2026-001','approved','Government review completed','completed',1),
+  ('INN-2026-001','partner_matching','Fictional ecosystem partners shortlisted','completed',2),
+  ('INN-2026-001','prototype','Prototype development','in_progress',3),
+  ('INN-2026-002','government_review','Government review completed','completed',1),
+  ('INN-2026-002','research','Research planning','in_progress',2),
+  ('INN-2026-002','field_pilot','Field validation planned','upcoming',3),
+  ('INN-2026-003','government_review','Government review completed','completed',1),
+  ('INN-2026-003','partner_matching','Partner matching','in_progress',2),
+  ('INN-2026-003','prototype','Prototype planning','upcoming',3),
+  ('INN-2026-004','approved','Government review completed','completed',1),
+  ('INN-2026-004','prototype','Prototype completed','completed',2),
+  ('INN-2026-004','field_pilot','Field pilot','in_progress',3)
 ) AS x(challenge_code, stage, title, step_status, sort_order)
 JOIN public.innovation_challenges c ON c.challenge_code = x.challenge_code
 ON CONFLICT (challenge_id, stage, title) DO NOTHING;
