@@ -24,8 +24,8 @@ import { fetchOperationsDashboard, subscribeOperationsDashboard } from "@/lib/op
 
 export const Route = createFileRoute("/_authenticated/officer/")({
   validateSearch: (search: Record<string, unknown>) => ({
-    status: typeof search.status === "string" ? search.status : undefined,
-    priority: typeof search.priority === "string" ? search.priority : undefined,
+    status: typeof search["status"] === "string" ? search["status"] : undefined,
+    priority: typeof search["priority"] === "string" ? search["priority"] : undefined,
   }),
   component: OfficerDashboard,
 });
@@ -284,7 +284,7 @@ function OfficerDashboard() {
 }
 
 function DashboardLink({ label, value, href, tone }: { label: string; value: number; href: string; tone?: "default" | "warning" | "success" | "accent" }) {
-  return <a href={href}><StatCard label={label} value={value} tone={tone} /></a>;
+  return <a href={href}><StatCard label={label} value={value} tone={tone ?? "default"} /></a>;
 }
 
 function InsightPanel({ title, children }: { title: string; children: ReactNode }) {

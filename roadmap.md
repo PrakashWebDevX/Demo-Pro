@@ -26,3 +26,6 @@
 ## Master Problem Classification (complete, untested live)
 - Officer card (Simple Issue / Innovation Problem), audit, citizen-safe messages.
 - Needs: run `docs/sql/2026-09-25_master_classification.sql` in Supabase.
+
+## University Verification & Invitation (UI wired, untested live)
+- Needs migration supabase/migrations/20260926170000_university_verification_workflow.sql run manually.

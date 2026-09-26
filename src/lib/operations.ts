@@ -95,7 +95,7 @@ export async function fetchOperationsDashboard(): Promise<OperationsDashboard> {
   const simple: Record<string, number> & { overdue: number } = { submitted: 0, under_review: 0, assigned: 0, in_progress: 0, resolved: 0, citizen_feedback: 0, closed: 0, overdue: 0 };
   const innovation: Record<string, number> = Object.fromEntries(CHALLENGE_STAGES.map((stage) => [stage, 0]));
   for (const challenge of (challengesResult.data ?? []) as Array<{ id: string; stage: string }>) {
-    if (challenge.stage in innovation) innovation[challenge.stage]++;
+    if (challenge.stage in innovation) innovation[challenge.stage] = (innovation[challenge.stage] ?? 0) + 1;
   }
   const districtCounts = new Map<string, number>();
   const categoryCounts = new Map<string, number>();
@@ -120,7 +120,7 @@ export async function fetchOperationsDashboard(): Promise<OperationsDashboard> {
     const overdue = Boolean(assignment?.due_date && assignment.due_date < today && !TERMINAL_STATUSES.has(report.status));
     if (overdue) counts.overdue++;
     if (!isInnovation) {
-      if (report.status in simple) simple[report.status]++;
+      if (report.status in simple) simple[report.status] = (simple[report.status] ?? 0) + 1;
       if (overdue) simple.overdue++;
     }
     if (report.area_type === "urban") increment(districtCounts, "urban");

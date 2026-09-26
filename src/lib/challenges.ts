@@ -75,7 +75,7 @@ export interface ChallengePartnerRow {
   match_reason: string | null;
   shortlisted: boolean;
   selected_role: SelectedRole | null;
-  invitation_status: "none" | "sent" | "accepted" | "declined";
+  invitation_status: "none" | "not_invited" | "shortlisted" | "sent" | "invited" | "accepted" | "active_team" | "declined" | "withdrawn";
 }
 
 export interface ChallengePlan {
@@ -436,6 +436,27 @@ export async function setUniversityVerification(args: {
   });
   if (error) throw error;
   return data as UniversityVerification;
+}
+
+/** Invite a verified university. The database re-checks verification and eligibility. */
+export async function sendUniversityInvitation(args: {
+  challengeId: string;
+  partnerId: string;
+  role: string;
+  contribution: string;
+  targetDate: string;
+  scope: string;
+}) {
+  const { data, error } = await db.rpc("send_university_invitation", {
+    _challenge_id: args.challengeId,
+    _partner_id: args.partnerId,
+    _university_role: args.role,
+    _expected_contribution: args.contribution,
+    _target_date: args.targetDate,
+    _scope: args.scope || null,
+  });
+  if (error) throw error;
+  return data as ChallengePartnerRow;
 }
 
 export async function markResponse(c: Challenge, row: ChallengePartnerRow, accepted: boolean, by: string, partnerName: string) {

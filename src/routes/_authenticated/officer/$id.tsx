@@ -97,7 +97,7 @@ function OfficerReviewPage() {
   if (!report) {
     return (
       <Page title={lang === "en" ? "Report not found" : "शिकायत नहीं मिली"}>
-        <Button onClick={() => navigate({ to: "/officer" })}>
+        <Button onClick={() => navigate({ to: "/officer", search: { status: undefined, priority: undefined } })}>
           {lang === "en" ? "Back to dashboard" : "वापस डैशबोर्ड"}
         </Button>
       </Page>
@@ -288,7 +288,7 @@ function OfficerReviewPage() {
             ))}
           </ol>
           <Button asChild variant="link" className="mt-4 px-0">
-            <Link to="/officer">{lang === "en" ? "Back to all reports" : "सभी शिकायतें"}</Link>
+            <Link to="/officer" search={{ status: undefined, priority: undefined }}>{lang === "en" ? "Back to all reports" : "सभी शिकायतें"}</Link>
           </Button>
         </div>
       </div>

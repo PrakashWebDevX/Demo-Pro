@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Circle, CircleDot, Sparkles, Star } from "lucide-react";
 import { Page } from "@/components/app/Page";
 import { MediaGallery } from "@/components/app/MediaGallery";
+import { UniversityInviteForm } from "@/components/app/UniversityInviteForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -363,9 +364,18 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
                           <Button size="sm" disabled={!invitationEligible} variant={isSel ? "default" : "outline"} onClick={() => setSelected((s) => ({ ...s, [role]: isSel ? null : p.id }))}>
                             {isSel ? `Selected as ${ROLE_LABELS[role]}` : `Select as ${ROLE_LABELS[role]}`}
                           </Button>
-                          {g === "university" && !invitationEligible ? <span className="text-xs text-warning-foreground">Verify university before inviting</span> : null}
-                          {inv && inv !== "none" ? <span className="text-sm capitalize text-muted-foreground">Invitation: {inv}</span> : null}
+                          {inv && inv !== "none" ? <span className="text-sm capitalize text-muted-foreground">Invitation: {inv.replace(/_/g, " ")}</span> : null}
                         </div>
+                        {g === "university" ? (
+                          <UniversityInviteForm
+                            challengeId={c.id}
+                            partnerId={p.id}
+                            partnerActive={p.active_status}
+                            verification={verification}
+                            invitationStatus={inv}
+                            onSent={refresh}
+                          />
+                        ) : null}
                       </div>
                     );
                   })}

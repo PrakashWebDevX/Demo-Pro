@@ -258,7 +258,7 @@ async function syncOne(record: OfflineReportRecord, userId: string) {
       if (!existingMedia) {
         const { error: uploadError } = await supabase.storage
           .from("report-media")
-          .upload(path, item.blob, { contentType: item.type || undefined, upsert: true });
+          .upload(path, item.blob, { ...(item.type ? { contentType: item.type } : {}), upsert: true });
         if (uploadError) throw uploadError;
         const { error: mediaRowError } = await mediaQuery
           .insert({ report_id: cloudReport.id, file_url: path, file_type: item.type || null });

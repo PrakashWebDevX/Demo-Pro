@@ -35,18 +35,22 @@ function UniversityVerificationDirectory() {
   if (!allowed) return <Page title="University Verification Directory"><EmptyState title="Government staff access required." /></Page>;
   if (isLoading) return <Page title="University Verification Directory"><p className="text-muted-foreground">Loading…</p></Page>;
 
-  async function save(partnerId: string, status: UniversityVerification["verification_status"], eligible: boolean) {
+  async function save(partnerId: string, status: UniversityVerification["verification_status"], defaultEligible: boolean) {
     if (!window.confirm(`Confirm university verification status: ${status}?`)) return;
     const current = byPartner.get(partnerId);
     const reference = (document.getElementById(`reference-${partnerId}`) as HTMLInputElement | null)?.value.trim();
     const note = (document.getElementById(`note-${partnerId}`) as HTMLInputElement | null)?.value.trim();
+    const sourceType = (document.getElementById(`source-${partnerId}`) as HTMLSelectElement | null)?.value || current?.verification_source_type || "Demo Record";
+    const eligibleBox = document.getElementById(`eligible-${partnerId}`) as HTMLInputElement | null;
+    // Only a verified university may be eligible; the officer's toggle applies when verifying.
+    const eligible = status === "verified" ? (eligibleBox?.checked ?? defaultEligible) : false;
     try {
       await setUniversityVerification({
         partnerId,
         status,
         eligible,
-        sourceType: current?.verification_source_type ?? "Demo Record",
-        referenceId: reference || current?.verification_reference_id || undefined,
+        sourceType,
+        ...((reference || current?.verification_reference_id) ? { referenceId: reference || current!.verification_reference_id! } : {}),
         note: note || current?.verification_note || DEMO_NOTE,
       });
       await queryClient.invalidateQueries({ queryKey: ["university-verifications"] });
@@ -82,6 +86,8 @@ function UniversityVerificationDirectory() {
                 <p><b>Source:</b> {verification?.verification_source_type ?? "—"}</p>
                 <p><b>Reference:</b> {verification?.verification_reference_id ?? "—"}</p>
                 <p><b>Verified date:</b> {verification?.verified_at ? new Date(verification.verified_at).toLocaleDateString() : "—"}</p>
+                <p><b>Verified by:</b> {verification?.verified_by_profile_id ? "Government staff (recorded)" : verification?.verification_status === "verified" ? "Demo Innovation Administrator" : "—"}</p>
+                <p><b>Active status:</b> {partner.active_status ? "Active" : "Inactive"}</p>
                 <p><b>Invitation eligibility:</b> {canInvite ? "Eligible" : "Not eligible"}</p>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">{verification?.verification_note ?? DEMO_NOTE}</p>
@@ -93,6 +99,12 @@ function UniversityVerificationDirectory() {
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <div className="space-y-1"><Label htmlFor={`reference-${partner.id}`}>Reference ID / URL</Label><Input id={`reference-${partner.id}`} defaultValue={verification?.verification_reference_id ?? ""} placeholder="Manual demo reference" /></div>
+                <div className="space-y-1"><Label htmlFor={`source-${partner.id}`}>Verification source</Label>
+                  <select id={`source-${partner.id}`} defaultValue={verification?.verification_source_type ?? "Demo Record"} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    {["Demo Record", "UGC Reference", "AICTE Reference", "Manual Document Review"].map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 self-end text-sm"><input id={`eligible-${partner.id}`} type="checkbox" defaultChecked={verification?.eligibility_to_invite ?? true} /> Eligible to invite (applies when marked Verified)</label>
                 <div className="space-y-1"><Label htmlFor={`note-${partner.id}`}>Verification note</Label><Input id={`note-${partner.id}`} defaultValue={verification?.verification_note ?? DEMO_NOTE} /></div>
               </div>
             </article>

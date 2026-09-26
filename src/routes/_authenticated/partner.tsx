@@ -86,7 +86,7 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
     await queryClient.invalidateQueries({ queryKey: ["mapped-partner-invitations"] });
   }
 
-  async function submitUpdate(challengeId: string, type: "clarification_request" | "research_update" | "technical_approach" | "prototype_update" | "field_pilot_update" | "ready_for_review") {
+  async function submitUpdate(challengeId: string, type: "clarification_request" | "research_update" | "technical_approach" | "prototype_update" | "field_pilot_update" | "resource_estimate" | "ready_for_review") {
     if (!user || !organization) return;
     await submitMappedPartnerUpdate({
       challengeId,
@@ -124,7 +124,7 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
             </div>
             <p className="mt-3">{inv.challenge.public_summary ?? inv.challenge.problem_statement}</p>
             <p className="mt-2 text-sm text-muted-foreground">Stage: {inv.challenge.stage} · Progress: {inv.challenge.progress_pct}% · Target: {inv.challenge.target_metric ?? "—"}</p>
-            {teamRoles.filter((team) => team.challenge_id === inv.challenge!.id).map((team) => (
+            {teamRoles.filter((team: any) => team.challenge_id === inv.challenge!.id).map((team: any) => (
               <div key={team.role_key} className="mt-3 rounded-md bg-muted p-3 text-sm">
                 <p className="font-semibold">{team.role_label}: {team.display_name}</p>
                 {team.member_count ? <p>Team size: {team.member_count}</p> : null}
@@ -132,8 +132,8 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
                 <p className="text-muted-foreground">{team.status}</p>
               </div>
             ))}
-            {updates.filter((update) => update.challenge_id === inv.challenge!.id).length > 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">Submitted updates: {updates.filter((update) => update.challenge_id === inv.challenge!.id).length}</p>
+            {updates.filter((update: any) => update.challenge_id === inv.challenge!.id).length > 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">Submitted updates: {updates.filter((update: any) => update.challenge_id === inv.challenge!.id).length}</p>
             ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               <Button asChild variant="outline"><Link to="/challenges/$id" params={{ id: inv.challenge.id }}>View challenge</Link></Button>
