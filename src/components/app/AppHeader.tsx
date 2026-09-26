@@ -74,7 +74,12 @@ export function AppHeader() {
         ...(role === "citizen"
           ? [{ to: "/offline-reports", label: tr("Saved Offline Reports", "ऑफलाइन शिकायतें") }]
           : []),
-        { to: "/innovation", label: t("innovation") },
+        ...(role === "university_partner" || role === "industry_partner"
+          ? [{ to: "/partner", label: tr("Partner Portal", "भागीदार पोर्टल") }]
+          : []),
+        ...(role === "university_partner" || role === "industry_partner"
+          ? []
+          : [{ to: "/innovation", label: t("innovation") }]),
         { to: "/challenges", label: tr("My Challenges", "मेरी चुनौतियाँ") },
         { to: "/impact", label: tr("Impact", "प्रभाव") },
         { to: "/help", label: t("help") },

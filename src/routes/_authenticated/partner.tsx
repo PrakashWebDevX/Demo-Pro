@@ -28,6 +28,12 @@ import {
   fetchMyInvitations,
   fetchMyPartnerOrgs,
   respondToInvitation,
+  fetchMappedPartnerOrg,
+  fetchMappedPartnerInvitations,
+  respondToMappedInvitation,
+  submitMappedPartnerUpdate,
+  fetchMappedPartnerUpdates,
+  fetchMappedTeamRoles,
   type PartnerInvitation,
 } from "@/lib/challenges";
 
@@ -36,6 +42,115 @@ export const Route = createFileRoute("/_authenticated/partner")({
 });
 
 function PartnerDashboard() {
+  const { role } = useAuth();
+  if (role === "university_partner" || role === "industry_partner") {
+    return <MappedPartnerPortal role={role} />;
+  }
+  return <LegacyPartnerDashboard />;
+}
+
+function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_partner" }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const university = role === "university_partner";
+  const { data: organization, isLoading: loadingOrg } = useQuery({
+    queryKey: ["mapped-partner-org", user?.id],
+    queryFn: () => fetchMappedPartnerOrg(user!.id),
+    enabled: Boolean(user?.id),
+  });
+  const { data: invitations = [], isLoading: loadingInvitations } = useQuery({
+    queryKey: ["mapped-partner-invitations", organization?.id],
+    queryFn: () => fetchMappedPartnerInvitations(organization!.id),
+    enabled: Boolean(organization?.id),
+  });
+  const challengeIds = invitations.flatMap((inv) => inv.challenge ? [inv.challenge.id] : []);
+  const { data: updates = [] } = useQuery({
+    queryKey: ["mapped-partner-updates", organization?.id, challengeIds.join(",")],
+    queryFn: () => fetchMappedPartnerUpdates(organization!.id, challengeIds),
+    enabled: Boolean(organization?.id),
+  });
+  const { data: teamRoles = [] } = useQuery({
+    queryKey: ["mapped-partner-team-roles", organization?.id, challengeIds.join(",")],
+    queryFn: () => fetchMappedTeamRoles(challengeIds, organization!.id),
+    enabled: Boolean(organization?.id),
+  });
+
+  async function respond(rowId: string, accepted: boolean) {
+    await respondToMappedInvitation(rowId, accepted);
+    await queryClient.invalidateQueries({ queryKey: ["mapped-partner-invitations"] });
+  }
+
+  async function submitUpdate(challengeId: string, type: "clarification_request" | "research_update" | "technical_approach" | "prototype_update" | "field_pilot_update" | "ready_for_review") {
+    if (!user || !organization) return;
+    await submitMappedPartnerUpdate({
+      challengeId,
+      partnerId: organization.id,
+      profileId: user.id,
+      updateType: type,
+      title: type.replaceAll("_", " "),
+      publicSummary: "Demo partner update submitted for government review.",
+    });
+    toast.success("Update submitted for government review.");
+  }
+
+  if (loadingOrg || loadingInvitations) return <Page title="Partner Portal"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (!organization) return <Page title="Partner Portal"><EmptyState title="Partner organization mapping is not configured." hint="Ask an administrator to configure the secure demo mapping." /></Page>;
+
+  return (
+    <Page title={university ? "University Partner Portal" : "Industry / Startup Partner Portal"} description={organization.name}>
+      <p className="text-sm text-muted-foreground">Demo account workspace. Only explicitly mapped and invited challenges are shown.</p>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <StatCard label="Invited challenges" value={invitations.filter((x) => x.invitation_status === "sent").length} tone="accent" />
+        <StatCard label="Accepted / Active" value={invitations.filter((x) => x.invitation_status === "accepted").length} tone="success" />
+        <StatCard label="Declined" value={invitations.filter((x) => x.invitation_status === "declined").length} />
+      </div>
+      <div className="mt-8 grid gap-3">
+        {invitations.length === 0 ? <EmptyState title="No mapped challenge invitations" /> : null}
+        {invitations.map((inv) => inv.challenge ? (
+          <article key={inv.id} className="card-surface p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold">{inv.challenge.title}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{inv.challenge.category_label ?? inv.challenge.category_key} · {inv.challenge.district} · {inv.challenge.area_type}</p>
+              </div>
+              <span className="rounded-md bg-muted px-2 py-1 text-sm font-medium">{inv.invitation_status}</span>
+            </div>
+            <p className="mt-3">{inv.challenge.public_summary ?? inv.challenge.problem_statement}</p>
+            <p className="mt-2 text-sm text-muted-foreground">Stage: {inv.challenge.stage} · Progress: {inv.challenge.progress_pct}% · Target: {inv.challenge.target_metric ?? "—"}</p>
+            {teamRoles.filter((team) => team.challenge_id === inv.challenge!.id).map((team) => (
+              <div key={team.role_key} className="mt-3 rounded-md bg-muted p-3 text-sm">
+                <p className="font-semibold">{team.role_label}: {team.display_name}</p>
+                {team.member_count ? <p>Team size: {team.member_count}</p> : null}
+                {team.skills?.length ? <p>Skills: {team.skills.join(", ")}</p> : null}
+                <p className="text-muted-foreground">{team.status}</p>
+              </div>
+            ))}
+            {updates.filter((update) => update.challenge_id === inv.challenge!.id).length > 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">Submitted updates: {updates.filter((update) => update.challenge_id === inv.challenge!.id).length}</p>
+            ) : null}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild variant="outline"><Link to="/challenges/$id" params={{ id: inv.challenge.id }}>View challenge</Link></Button>
+              {inv.invitation_status === "sent" ? <>
+                <Button onClick={() => void respond(inv.id, true)}>Accept Invitation</Button>
+                <Button variant="outline" onClick={() => void respond(inv.id, false)}>Decline</Button>
+                <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, "clarification_request")}>Request Clarification</Button>
+              </> : null}
+              {inv.invitation_status === "accepted" ? <>
+                <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, university ? "research_update" : "technical_approach")}>{university ? "Submit Research Update" : "Submit Technical Approach"}</Button>
+                <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, university ? "prototype_update" : "prototype_update")}>Submit Prototype Update</Button>
+                {!university ? <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, "field_pilot_update")}>Submit Field Pilot Update</Button> : null}
+                {!university ? <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, "resource_estimate")}>Submit Resource Estimate</Button> : null}
+                <Button variant="outline" onClick={() => void submitUpdate(inv.challenge!.id, university ? "ready_for_review" : "ready_for_review")}>Ready for Government Review</Button>
+              </> : null}
+            </div>
+          </article>
+        ) : null)}
+      </div>
+    </Page>
+  );
+}
+
+function LegacyPartnerDashboard() {
   const { user, profile } = useAuth();
   const { lang, pick } = useLang();
   const queryClient = useQueryClient();

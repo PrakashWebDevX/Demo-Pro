@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, Page, StatCard } from "@/components/app/Page";
 import { PAGE_SIZE, Pagination } from "@/components/app/Pagination";
@@ -32,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/officer/")({
 
 function OfficerDashboard() {
   const { role } = useAuth();
+  const navigate = useNavigate();
   const { lang, t, pick } = useLang();
   const searchParams = Route.useSearch();
   const [district, setDistrict] = useState("all");
@@ -55,11 +56,15 @@ function OfficerDashboard() {
   });
 
   useEffect(() => {
+    if (role === "university_partner" || role === "industry_partner") {
+      void navigate({ to: "/partner", replace: true });
+      return;
+    }
     if (!isStaffRole(role)) return;
     return subscribeOperationsDashboard(() => {
       void operations.refetch();
     });
-  }, [operations.refetch, role]);
+  }, [navigate, operations.refetch, role]);
 
   const stats = useMemo(() => {
     const resolved = reports.filter((r) => r.status === "resolved" && r.resolved_at);

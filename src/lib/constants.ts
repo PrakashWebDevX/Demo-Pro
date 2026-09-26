@@ -90,6 +90,8 @@ export const ROLE_LABELS: Record<string, string> = {
   dept_admin: "Department Administrator",
   university: "University / Student Team",
   partner: "Industry / Startup / CSR Partner",
+  university_partner: "University Partner",
+  industry_partner: "Industry / Startup Partner",
   admin: "Super Admin",
 };
 
@@ -99,6 +101,8 @@ export const ROLE_HOME: Record<string, string> = {
   dept_admin: "/department",
   university: "/partner",
   partner: "/partner",
+  university_partner: "/partner",
+  industry_partner: "/partner",
   admin: "/admin",
 };
 

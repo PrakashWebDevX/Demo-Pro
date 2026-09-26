@@ -536,3 +536,92 @@ export async function respondToInvitation(rowId: string, accepted: boolean, note
   });
   if (error) throw error;
 }
+
+export async function fetchMappedPartnerOrg(userId: string): Promise<MyPartnerOrg | null> {
+  const { data: mapping, error: mappingError } = await db
+    .from("innovation_partner_profiles")
+    .select("partner_id")
+    .eq("profile_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+  if (mappingError) throw mappingError;
+  if (!mapping?.partner_id) return null;
+  const { data, error } = await db
+    .from("innovation_partners")
+    .select("id, name, organization_type, city, expertise_labels, innovation_domains, available_team_capacity, current_workload")
+    .eq("id", mapping.partner_id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function fetchMappedPartnerInvitations(partnerId: string): Promise<PartnerInvitation[]> {
+  const { data, error } = await db
+    .from("innovation_challenge_partners")
+    .select("*, innovation_challenges(*)")
+    .eq("partner_id", partnerId)
+    .in("invitation_status", ["sent", "accepted", "declined"])
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row: ChallengePartnerRow & { innovation_challenges: Challenge | null }) => ({
+    ...row,
+    partner_name: "Mapped partner organization",
+    challenge: row.innovation_challenges ?? null,
+  }));
+}
+
+export async function respondToMappedInvitation(rowId: string, accepted: boolean, note?: string) {
+  const { error } = await db.rpc("partner_respond_invitation_by_profile", {
+    _row_id: rowId,
+    _accepted: accepted,
+    _note: note?.trim() || null,
+  });
+  if (error) throw error;
+}
+
+export async function submitMappedPartnerUpdate(args: {
+  challengeId: string;
+  partnerId: string;
+  profileId: string;
+  updateType: "clarification_request" | "research_update" | "technical_approach" | "prototype_update" | "field_pilot_update" | "resource_estimate" | "deliverable_metadata" | "ready_for_review";
+  title: string;
+  publicSummary?: string;
+  privateDetails?: string;
+  safeFileReference?: string;
+}) {
+  const { error } = await db.from("innovation_partner_updates").insert({
+    challenge_id: args.challengeId,
+    partner_id: args.partnerId,
+    submitted_by_profile_id: args.profileId,
+    update_type: args.updateType,
+    title: args.title.trim(),
+    public_summary: args.publicSummary?.trim() || null,
+    private_details: args.privateDetails?.trim() || null,
+    safe_file_reference: args.safeFileReference?.trim() || null,
+    is_public: false,
+  });
+  if (error) throw error;
+}
+
+export async function fetchMappedPartnerUpdates(partnerId: string, challengeIds: string[]) {
+  if (challengeIds.length === 0) return [];
+  const { data, error } = await db
+    .from("innovation_partner_updates")
+    .select("id, challenge_id, update_type, title, status, created_at, public_summary")
+    .eq("partner_id", partnerId)
+    .in("challenge_id", challengeIds)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchMappedTeamRoles(challengeIds: string[], partnerId: string) {
+  if (challengeIds.length === 0) return [];
+  const { data, error } = await db
+    .from("innovation_challenge_team_roles")
+    .select("challenge_id, role_key, role_label, display_name, organization_name, member_count, status, skills, progress_pct, public_summary")
+    .in("challenge_id", challengeIds)
+    .eq("partner_id", partnerId);
+  if (error) throw error;
+  return data ?? [];
+}
