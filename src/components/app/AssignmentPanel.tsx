@@ -23,7 +23,7 @@ export function DemoBadge() {
 export function AiApprovesNote() {
   return (
     <p className="flex items-center gap-1.5 text-sm font-medium text-primary">
-      <ShieldCheck className="size-4" aria-hidden="true" /> AI recommends. Government approves.
+      <ShieldCheck className="size-4" aria-hidden="true" /> AI suggests. Government decides.
     </p>
   );
 }

@@ -31,7 +31,7 @@ export function MediaGallery({
               <li key={m.id}>
                 <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-md border bg-muted text-sm text-muted-foreground">
                   <ImageOff className="h-8 w-8" aria-hidden="true" />
-                  {tr("Photo unavailable")}
+                  {tr("Evidence image unavailable.")}
                 </div>
               </li>
             ) : (

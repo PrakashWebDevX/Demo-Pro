@@ -82,6 +82,14 @@ function OfficerReviewPage() {
     },
   });
   const [showDuplicates, setShowDuplicates] = useState(false);
+  // Existing citizen feedback row (returns nothing if access rules don't allow it).
+  const { data: citizenFeedback } = useQuery({
+    queryKey: ["feedback", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("feedback").select("rating, resolved_successfully").eq("report_id", id).maybeSingle();
+      return data as { rating: number; resolved_successfully: boolean | null } | null;
+    },
+  });
 
   const [remark, setRemark] = useState("");
   const [departmentId, setDepartmentId] = useState<string>("");
@@ -163,7 +171,7 @@ function OfficerReviewPage() {
               <ul className="mt-3 grid gap-1 text-sm">
                 <li>
                   Recommended Path:{" "}
-                  <b>{report.is_innovation ? "Potential Innovation Issue" : report.ai_category ? "Simple Issue" : "Officer Review Required"}</b>
+                  <b>{report.is_innovation ? "Potential Innovation Issue" : report.ai_category ? "Service Request" : "Officer Review Required"}</b>
                 </li>
                 {report.ai_category ? <li>Category: <b>{report.ai_category}</b></li> : null}
                 {report.ai_priority ? <li>Suggested priority: <b>{report.ai_priority}</b></li> : null}
@@ -172,7 +180,8 @@ function OfficerReviewPage() {
                 {report.ai_next_action ? <li>Suggested next step: {report.ai_next_action}</li> : null}
               </ul>
             )}
-            <p className="mt-3 text-sm font-medium">AI recommends. Government officer makes the final decision.</p>
+            <p className="mt-3 text-sm font-medium">AI suggests. Government decides.</p>
+            <p className="mt-1 text-xs text-muted-foreground">AI suggestions are advisory. Government officer approval is required before action.</p>
           </div>
 
           {report.ai_next_action || report.ai_recommended_department ? (
@@ -181,7 +190,7 @@ function OfficerReviewPage() {
               <ul className="mt-3 grid gap-2 text-sm">
                 <li className="flex flex-col sm:flex-row sm:gap-1">
                   <span>Recommended Path:</span>
-                  <b>{report.is_innovation ? "Potential Innovation Issue" : "Simple Issue"}</b>
+                  <b>{report.is_innovation ? "Potential Innovation Issue" : "Service Request"}</b>
                 </li>
                 {report.ai_next_action ? (
                   <li className="flex flex-col sm:flex-row sm:gap-1">
@@ -213,6 +222,55 @@ function OfficerReviewPage() {
           ) : (
             <p className="text-sm text-muted-foreground">AI suggestion is not available for this report.</p>
           )}
+
+          <div className="card-surface break-words p-5">
+            <h2 className="text-lg font-semibold">Civic Impact Loop</h2>
+            <ul className="mt-3 grid gap-2 text-sm">
+              <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <span>Resolution state:</span> <StatusBadge status={report.status} />
+              </li>
+              <li className="flex flex-col sm:flex-row sm:gap-1">
+                <span>Evidence status:</span>
+                <b>{media.length > 0 ? `Citizen evidence available (${media.length})` : "No citizen evidence"}</b>
+                <span className="text-muted-foreground">· Resolution photo not yet recorded</span>
+              </li>
+              {["resolved", "citizen_feedback", "closed"].includes(report.status) ? (
+                <li className="flex flex-col sm:flex-row sm:gap-1">
+                  <span>Citizen confirmation:</span>
+                  <b>
+                    {citizenFeedback
+                      ? citizenFeedback.resolved_successfully === false
+                        ? `Review requested (rating ${citizenFeedback.rating}/5)`
+                        : `Confirmed resolved (rating ${citizenFeedback.rating}/5)`
+                      : "Awaiting citizen feedback"}
+                  </b>
+                </li>
+              ) : null}
+              <li className="flex flex-col sm:flex-row sm:gap-1">
+                <span>Related reports (same category and district, last 90 days):</span>
+                <b>{duplicates.length}</b>
+              </li>
+              {report.ai_next_action ? (
+                <li className="flex flex-col sm:flex-row sm:gap-1">
+                  <span>AI recommendation:</span>
+                  <span className="min-w-0">{report.ai_next_action}</span>
+                </li>
+              ) : null}
+            </ul>
+            {duplicates.length === 0 && !report.is_innovation ? (
+              <p className="mt-3 text-sm text-muted-foreground">Recurrence analysis is not configured for this report.</p>
+            ) : null}
+            {report.is_innovation || duplicates.length >= 3 ? (
+              <div className="mt-3 rounded-md border border-accent/40 bg-accent/8 p-3">
+                <p className="font-semibold text-accent">Potential Prevention Review</p>
+                <p className="mt-1 text-sm">
+                  {report.is_innovation ? "This report is flagged as a potential innovation issue." : `${duplicates.length} related reports suggest a recurring problem.`}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">AI suggestions are advisory. Government officer approval is required before action.</p>
+              </div>
+            ) : null}
+            <p className="mt-3 text-xs text-muted-foreground">Prevention review action is not configured.</p>
+          </div>
 
           <div className="card-surface p-5">
             <button

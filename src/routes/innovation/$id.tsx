@@ -98,6 +98,7 @@ function InnovationDetail() {
 
   return (
     <Page title={project.title} description={project.district ?? "Jharkhand"}>
+      <p className="mb-4 rounded-md bg-muted p-3 text-sm">Only government-approved public-safe case information is shown.</p>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <div className="card-surface p-5">

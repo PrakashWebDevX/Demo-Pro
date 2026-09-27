@@ -30,9 +30,20 @@ function getRecognizer(): RecognizerCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+const MSG = {
+  listening: "Listening… Tap Stop when you finish speaking.",
+  unsupported: "Voice reporting is not supported in this browser. Please type your report.",
+  denied: "Microphone permission was denied. Please type your report or allow microphone access in browser settings.",
+  noSpeech: "No speech was detected. Please try again or type your report.",
+  error: "Voice transcription could not be completed. Please try again or type your report.",
+  noLocale: "Voice recognition is not configured for this language. Please type your report.",
+  stopped: "Recording stopped. Review and edit the text below.",
+};
+
 export function VoiceReport({ onUseTranscript }: { onUseTranscript: (text: string) => void }) {
   const { locale } = useLang();
   const [voiceLang, setVoiceLang] = useState<string>(locale);
+  const [supported, setSupported] = useState<boolean | null>(null);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interim, setInterim] = useState("");
@@ -40,19 +51,35 @@ export function VoiceReport({ onUseTranscript }: { onUseTranscript: (text: strin
   const recRef = useRef<Recognizer | null>(null);
   const gotSpeech = useRef(false);
 
-  useEffect(() => () => recRef.current?.abort(), []);
+  // Feature detection only (no microphone access) after hydration.
+  useEffect(() => {
+    const ok = !!getRecognizer();
+    setSupported(ok);
+    if (!ok) setStatus(MSG.unsupported);
+  }, []);
+
+  useEffect(() => setVoiceLang(locale), [locale]);
+
+  // Stop on unmount or when leaving the page.
+  useEffect(() => {
+    const onHide = () => recRef.current?.abort();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      recRef.current?.abort();
+      recRef.current = null;
+    };
+  }, []);
 
   const option = LANGUAGE_OPTIONS.find((o) => o.code === voiceLang);
 
   const start = () => {
+    if (recRef.current) return; // prevent multiple sessions
     const Ctor = getRecognizer();
-    if (!Ctor) {
-      setStatus("Voice reporting is not supported in this browser. Please type your report.");
-      return;
-    }
-    recRef.current?.abort();
+    if (!Ctor) return setStatus(MSG.unsupported);
+    if (!option?.speechLocale) return setStatus(MSG.noLocale);
     const rec = new Ctor();
-    rec.lang = option?.speechLocale ?? "en-IN";
+    rec.lang = option.speechLocale;
     rec.continuous = true;
     rec.interimResults = true;
     gotSpeech.current = false;
@@ -65,47 +92,46 @@ export function VoiceReport({ onUseTranscript }: { onUseTranscript: (text: strin
         if (r.isFinal) finalText += r[0].transcript;
         else interimText += r[0].transcript;
       }
-      if (finalText) {
+      if (finalText.trim()) {
         gotSpeech.current = true;
         setTranscript((t) => (t ? `${t} ${finalText.trim()}` : finalText.trim()));
       }
       setInterim(interimText);
     };
     rec.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setStatus("Microphone permission was denied. You can type your report instead.");
-      } else if (e.error === "no-speech") {
-        setStatus("No speech was detected. Please try again or type your report.");
-      } else if (e.error !== "aborted") {
-        setStatus("Voice transcription could not be completed. Please try again or type your report.");
-      }
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") setStatus(MSG.denied);
+      else if (e.error === "no-speech") setStatus(MSG.noSpeech);
+      else if (e.error === "language-not-supported") setStatus(MSG.noLocale);
+      else if (e.error !== "aborted") setStatus(MSG.error);
     };
     rec.onend = () => {
+      recRef.current = null;
       setListening(false);
       setInterim("");
-      setStatus((s) => (s.startsWith("Listening") ? (gotSpeech.current ? "Recording stopped. Review the text below." : "No speech was detected. Please try again or type your report.") : s));
+      setStatus((s) => (s === MSG.listening ? (gotSpeech.current ? MSG.stopped : MSG.noSpeech) : s));
     };
     recRef.current = rec;
     try {
       rec.start();
       setListening(true);
-      setStatus("Listening… Tap Stop when finished.");
+      setStatus(MSG.listening);
     } catch {
-      setStatus("Voice transcription could not be completed. Please try again or type your report.");
+      recRef.current = null;
+      setStatus(MSG.error);
     }
   };
 
   const stop = () => recRef.current?.stop();
 
   return (
-    <section className="card-surface space-y-3 p-4">
+    <section className="card-surface min-w-0 space-y-3 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-base font-semibold">Report by Voice</h3>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Voice-to-text demo</span>
+        <h3 className="text-base font-semibold">AI Voice Report</h3>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Voice-to-text demo — no call recording</span>
       </div>
-      <p className="text-sm text-muted-foreground">Select a language, speak your issue, review the text, then submit your report.</p>
+      <p className="text-sm text-muted-foreground">Speak your issue, review the text, and submit your report.</p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <Label htmlFor="voice-lang">Voice language</Label>
           <select
             id="voice-lang"
@@ -114,7 +140,7 @@ export function VoiceReport({ onUseTranscript }: { onUseTranscript: (text: strin
             disabled={listening}
             className="h-11 w-full rounded-md border bg-background px-2 text-sm text-foreground sm:w-56"
           >
-            {LANGUAGE_OPTIONS.map((o) => (
+            {LANGUAGE_OPTIONS.filter((o) => o.enabled).map((o) => (
               <option key={o.code} value={o.code}>
                 {o.native === o.english ? o.native : `${o.native} — ${o.english}`}
               </option>
@@ -122,34 +148,32 @@ export function VoiceReport({ onUseTranscript }: { onUseTranscript: (text: strin
           </select>
         </div>
         {listening ? (
-          <Button type="button" variant="destructive" className="min-h-11" onClick={stop}>
+          <Button type="button" variant="destructive" className="min-h-11 w-full sm:w-auto" onClick={stop}>
             <Square className="size-4" /> Stop Recording
           </Button>
         ) : (
-          <Button type="button" variant="outline" className="min-h-11" onClick={start}>
+          <Button type="button" variant="outline" className="min-h-11 w-full sm:w-auto" onClick={start} disabled={supported === false}>
             <Mic className="size-4" /> Start Voice Report
           </Button>
         )}
       </div>
-      {option && option.code !== locale ? (
-        <p className="text-xs text-muted-foreground">Voice input language selected. App interface language remains unchanged.</p>
-      ) : null}
       <div className="space-y-1">
-        <Label htmlFor="voice-transcript">Transcript</Label>
+        <Label htmlFor="voice-transcript">Voice transcript</Label>
+        <p className="text-xs text-muted-foreground">Review and edit before submitting.</p>
         <Textarea
           id="voice-transcript"
           rows={4}
           value={interim ? `${transcript} ${interim}`.trim() : transcript}
           onChange={(e) => setTranscript(e.target.value)}
           readOnly={listening}
-          className="break-words text-base"
+          className="w-full break-words text-base"
         />
       </div>
       <Button type="button" className="min-h-11 w-full sm:w-auto" disabled={!transcript.trim() || listening} onClick={() => onUseTranscript(transcript.trim())}>
         Use Transcript
       </Button>
-      <p role="status" aria-live="polite" className="min-h-5 text-sm font-medium">{status}</p>
-      <p className="text-xs text-muted-foreground">Your spoken words are converted to text for this report. Review before submitting.</p>
+      <p role="status" aria-live="polite" className="min-h-5 break-words text-sm font-medium">{status}</p>
+      <p className="text-xs text-muted-foreground">Your voice is converted to text in your browser. Review the text before submitting.</p>
     </section>
   );
 }

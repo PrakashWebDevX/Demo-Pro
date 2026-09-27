@@ -106,6 +106,7 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
   return (
     <Page title={university ? "University Partner Portal" : "Industry / Startup Partner Portal"} description={organization.name}>
       <p className="text-sm text-muted-foreground">Demo account workspace. Only explicitly mapped and invited challenges are shown.</p>
+      <p className="mt-2 rounded-md bg-muted p-3 text-sm">Only government-approved public-safe case information is shown.</p>
       {university ? <p className="mt-2 text-sm text-muted-foreground">Verification status: {verificationRows[0]?.verification_status ?? "unverified"}</p> : null}
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <StatCard label="Invited challenges" value={invitations.filter((x) => x.invitation_status === "sent").length} tone="accent" />

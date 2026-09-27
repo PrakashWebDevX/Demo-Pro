@@ -21,7 +21,7 @@ function ChallengeList() {
   const { tr } = useLang();
   const { data = [], isLoading, error } = useQuery({ queryKey: ["challenges"], queryFn: fetchChallenges });
   return (
-    <Page title={tr("Innovation Challenges")} description={tr("AI recommends. Government approves.")}>
+    <Page title={tr("Innovation Challenges")} description={tr("AI suggests. Government decides.")}>
       {error ? <p className="text-destructive">{(error as Error).message}</p> : null}
       <div className="grid gap-3 md:grid-cols-2">
         {isLoading ? <p className="text-muted-foreground">{tr("Loading…")}</p> : null}

@@ -153,11 +153,11 @@ function OfficerDashboard() {
     >
       <div className="mb-6 grid gap-4 md:grid-cols-2">
         {([
-          { key: "simple", title: "Simple Issues", text: "Standard reports with direct department resolution.", button: "View Simple Issues", count: masterCounts.simple },
-          { key: "innovation", title: "Innovation Issues", text: "Complex reports requiring innovation review or challenge workflow.", button: "View Innovation Issues", count: masterCounts.innovation },
+          { key: "simple", title: "Service Requests", text: "Direct civic issues with a known government service response.", button: "View Service Requests", count: masterCounts.simple },
+          { key: "innovation", title: "Innovation Cases", text: "Complex or recurring civic challenges requiring investigation, collaboration, or pilot solutions.", button: "View Innovation Cases", count: masterCounts.innovation },
         ] as const).map((c) => (
           <section key={c.key} className={`card-surface p-6 ${caseType === c.key ? "ring-2 ring-accent" : ""}`}>
-            <p className="text-sm font-medium text-accent">AI recommends. Government approves.</p>
+            <p className="text-sm font-medium text-accent">AI suggests. Government decides.</p>
             <div className="mt-1 flex items-start justify-between gap-3">
               <h2 className="text-xl font-bold">{c.title}</h2>
               <span className="text-sm font-semibold text-muted-foreground">
@@ -182,7 +182,7 @@ function OfficerDashboard() {
         {operations.error ? <p className="col-span-full rounded-md bg-destructive/10 p-3 text-destructive">Could not load operations data. Check the connected database schema and RLS.</p> : null}
         {operations.data ? <>
           <DashboardLink label="Total Reports" value={operations.data.overview.total} href="/officer" />
-          <DashboardLink label="Simple Issues" value={operations.data.overview.simple} href="/officer?status=submitted" />
+          <DashboardLink label="Service Requests" value={operations.data.overview.simple} href="/officer?status=submitted" />
           <DashboardLink label="Innovation Problems" value={operations.data.overview.innovation} href="/innovation" />
           <DashboardLink label="Needs Review" value={operations.data.overview.needsReview} href="/officer?status=under_review" tone="accent" />
           <DashboardLink label="High / Critical Priority" value={operations.data.overview.highCritical} href="/officer?priority=high" tone="warning" />
@@ -212,7 +212,7 @@ function OfficerDashboard() {
 
       {operations.data ? (
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          <InsightPanel title="Simple Issues — Direct Government Action">
+          <InsightPanel title="Service Requests — Direct Government Action">
             <CountList values={operations.data.simple} labels={{ ...Object.fromEntries(Object.entries(STATUS_LABELS).map(([key, label]) => [key, pick(label)])), overdue: "Overdue" }} hrefPrefix="/officer?status=" />
           </InsightPanel>
           <InsightPanel title="Innovation Problems — Long-Term Community Solutions">
@@ -293,7 +293,7 @@ function OfficerDashboard() {
 
       {caseType === "simple" || caseType === "innovation" ? (
         <div className="card-surface mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
-          <p className="font-semibold">Showing: {caseType === "simple" ? "Simple Issues" : "Innovation Issues"}</p>
+          <p className="font-semibold">Showing: {caseType === "simple" ? "Service Requests" : "Innovation Cases"}</p>
           <Button type="button" variant="outline" className="min-h-11" onClick={() => applyCaseType("all")}>Clear Filter</Button>
         </div>
       ) : null}

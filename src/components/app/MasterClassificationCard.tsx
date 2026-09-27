@@ -23,7 +23,7 @@ type Classified = Assignment & {
   classified_at?: string | null;
 };
 
-const LABEL: Record<Kind, string> = { standard: "Simple Issue", innovation: "Innovation Problem" };
+const LABEL: Record<Kind, string> = { standard: "Service Request", innovation: "Innovation Problem" };
 const DESC: Record<Kind, string> = {
   standard: "For direct government service and field action.",
   innovation: "For repeated or complex issues requiring research, prototype, pilot, and partner collaboration.",
@@ -143,7 +143,8 @@ export function MasterClassificationCard({
         </h2>
         <span className="rounded-full border px-3 py-1 text-xs font-medium">{STATUS_TEXT[status]}</span>
       </div>
-      <p className="mt-1 text-sm font-medium text-accent">AI recommends. Government approves.</p>
+      <p className="mt-1 text-sm font-medium text-accent">AI suggests. Government decides.</p>
+      <p className="mt-1 text-xs text-muted-foreground">AI suggestions are advisory. Government officer approval is required before action.</p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Problem type">
         {(["standard", "innovation"] as Kind[]).map((k) => {
@@ -210,7 +211,7 @@ export function MasterClassificationCard({
       <div className="mt-4 flex flex-wrap gap-3">
         <Button disabled={busy} onClick={() => save(ai)}>Approve AI Classification</Button>
         <Button variant="outline" disabled={busy} onClick={() => { setChoice("standard"); if (ai === "standard") void save("standard"); }}>
-          Change to Simple Issue
+          Change to Service Request
         </Button>
         <Button variant="outline" disabled={busy} onClick={() => { setChoice("innovation"); if (ai === "innovation") void save("innovation"); }}>
           Change to Innovation Problem

@@ -48,7 +48,7 @@ function ReportDetailPage() {
         .select("*")
         .eq("report_id", id)
         .maybeSingle();
-      return data as { rating: number; comment: string | null } | null;
+      return data as { rating: number; comment: string | null; resolved_successfully?: boolean | null } | null;
     },
   });
 
@@ -60,6 +60,10 @@ function ReportDetailPage() {
 
   async function submitFeedback() {
     if (!user || !report) return;
+    if (!resolvedConfirmed && !comment.trim()) {
+      toast.error("Please add a short reason for requesting review.");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("feedback").insert({
       report_id: report.id,
@@ -199,13 +203,41 @@ function ReportDetailPage() {
             </div>
           ) : null}
 
-          <div className="card-surface p-5">
-            <h2 className="text-lg font-semibold">
-              {tr("Resolution Evidence", "समाधान प्रमाण")}
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {tr("Resolution photo will be added after field verification.", "क्षेत्र सत्यापन के बाद समाधान फोटो जोड़ी जाएगी।")}
-            </p>
+          <div className="card-surface break-words p-5">
+            <h2 className="text-lg font-semibold">{tr("Outcome and Verification", "परिणाम एवं सत्यापन")}</h2>
+            <dl className="mt-3 grid gap-3 text-sm">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <dt className="text-muted-foreground">{tr("Current status", "वर्तमान स्थिति")}</dt>
+                <dd><StatusBadge status={report.status} /></dd>
+              </div>
+              {feedbackStage && (latest?.remark || report.officer_remark) ? (
+                <div>
+                  <dt className="text-muted-foreground">{tr("Government Update", "सरकारी अपडेट")}</dt>
+                  <dd className="font-medium">
+                    {latest?.remark || report.officer_remark}
+                    {latest ? <span className="block text-xs font-normal text-muted-foreground">{new Date(latest.created_at).toLocaleString()}</span> : null}
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-muted-foreground">{tr("Resolution Evidence", "समाधान प्रमाण")}</dt>
+                <dd className="text-muted-foreground">
+                  {tr("Resolution photo will be added after field verification.", "क्षेत्र सत्यापन के बाद समाधान फोटो जोड़ी जाएगी।")}
+                </dd>
+              </div>
+              {feedbackStage ? (
+                <div>
+                  <dt className="text-muted-foreground">{tr("Verification Status", "सत्यापन स्थिति")}</dt>
+                  <dd className="font-medium">
+                    {feedback
+                      ? feedback.resolved_successfully === false
+                        ? tr("Citizen requested review", "नागरिक ने समीक्षा का अनुरोध किया")
+                        : tr("Confirmed resolved by citizen", "नागरिक द्वारा समाधान की पुष्टि")
+                      : tr("Awaiting citizen confirmation", "नागरिक पुष्टि की प्रतीक्षा")}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
           </div>
 
           {isOwner && feedbackStage ? (
@@ -223,24 +255,31 @@ function ReportDetailPage() {
                 <div className="mt-3 space-y-4">
                   <div>
                     <p className="font-medium">
-                      {tr("Was your issue resolved?", "क्या आपकी समस्या हल हुई?")}
+                      {tr("Is this issue resolved?", "क्या यह समस्या हल हो गई?")}
                     </p>
-                    <div className="mt-2 flex gap-3">
+                    <div className="mt-2 flex flex-col gap-3 sm:flex-row">
                       <Button
                         type="button"
+                        className="min-h-11"
                         variant={resolvedConfirmed ? "default" : "outline"}
                         onClick={() => setResolvedConfirmed(true)}
                       >
-                        {tr("Yes", "हाँ")}
+                        {tr("Yes, resolved", "हाँ, हल हो गई")}
                       </Button>
                       <Button
                         type="button"
+                        className="min-h-11"
                         variant={!resolvedConfirmed ? "default" : "outline"}
                         onClick={() => setResolvedConfirmed(false)}
                       >
-                        {tr("No", "नहीं")}
+                        {tr("Request Review", "समीक्षा का अनुरोध")}
                       </Button>
                     </div>
+                    {!resolvedConfirmed ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {tr("Add a short reason in the comment below. Your response is shared with the officer; the report status is not changed automatically.", "नीचे टिप्पणी में संक्षिप्त कारण लिखें। स्थिति स्वतः नहीं बदलेगी।")}
+                      </p>
+                    ) : null}
                   </div>
                   <div>
                     <p className="font-medium">{tr("Rating", "रेटिंग")}</p>
@@ -280,36 +319,51 @@ function ReportDetailPage() {
         </div>
 
         <div className="card-surface h-fit p-5">
-          <h2 className="text-lg font-semibold">
-            {tr("Status timeline", "स्थिति समयरेखा")}
-          </h2>
-          <ol className="mt-4 space-y-4">
-            {STATUS_FLOW.map((s, i) => {
-              const done = currentIndex >= i && currentIndex !== -1;
-              const entry = timeline.find((u) => u.new_status === s);
-              const at =
-                entry?.created_at ?? (s === "submitted" ? report.created_at : null);
-              return (
-                <li key={s} className="flex gap-3">
-                  <span
-                    className={`mt-1 size-3 shrink-0 rounded-full ${done ? "bg-success" : "bg-border"}`}
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className={`font-medium ${done ? "" : "text-muted-foreground"}`}>
-                      {pick(STATUS_LABELS[s])}
-                    </p>
-                    {at ? (
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(at).toLocaleString()}
-                        {entry?.remark ? ` — ${entry.remark}` : ""}
-                      </p>
-                    ) : null}
-                  </div>
+          <h2 className="text-lg font-semibold">{tr("Report Progress", "शिकायत की प्रगति")}</h2>
+          <dl className="mt-3 space-y-2 text-sm">
+            {report.public_issue_id ? (
+              <div className="flex flex-wrap justify-between gap-x-3">
+                <dt className="text-muted-foreground">{tr("Report ID", "शिकायत आईडी")}</dt>
+                <dd className="break-all font-medium">{report.public_issue_id}</dd>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <dt className="text-muted-foreground">{tr("Current status", "वर्तमान स्थिति")}</dt>
+              <dd><StatusBadge status={report.status} /></dd>
+            </div>
+            <div className="flex flex-wrap justify-between gap-x-3">
+              <dt className="text-muted-foreground">{tr("Last updated", "अंतिम अपडेट")}</dt>
+              <dd className="font-medium">
+                {new Date(latest?.created_at ?? report.created_at).toLocaleString()}
+              </dd>
+            </div>
+          </dl>
+          <ol className="mt-4 space-y-4 border-l-2 border-border pl-4">
+            <li className="relative">
+              <span className="absolute -left-[23px] top-1.5 size-3 rounded-full bg-success" aria-hidden="true" />
+              <p className="font-medium">{pick(STATUS_LABELS["submitted"])}</p>
+              <p className="text-sm text-muted-foreground">{new Date(report.created_at).toLocaleString()}</p>
+            </li>
+            {timeline
+              .filter((u) => u.new_status && u.new_status !== "submitted")
+              .map((u) => (
+                <li key={u.id} className="relative">
+                  <span className="absolute -left-[23px] top-1.5 size-3 rounded-full bg-success" aria-hidden="true" />
+                  <p className="break-words font-medium">
+                    {pick(STATUS_LABELS[u.new_status ?? ""]) || u.new_status}
+                  </p>
+                  <p className="break-words text-sm text-muted-foreground">
+                    {new Date(u.created_at).toLocaleString()}
+                    {u.remark ? ` — ${u.remark}` : ""}
+                  </p>
                 </li>
-              );
-            })}
+              ))}
           </ol>
+          {timeline.length === 0 ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {tr("No status updates have been recorded yet.", "अभी तक कोई स्थिति अपडेट दर्ज नहीं हुआ है।")}
+            </p>
+          ) : null}
           {report.status === "rejected" || report.status === "info_requested" ? (
             <p className="mt-4 rounded-md bg-warning/15 p-3 text-sm">
               {pick(STATUS_LABELS[report.status])}

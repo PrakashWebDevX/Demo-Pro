@@ -1,5 +1,5 @@
 import { Languages } from "lucide-react";
-import { LANGUAGE_OPTIONS, isLocale } from "@/i18n/languages";
+import { LANGUAGE_OPTIONS, availabilityLabel, getLanguageOption, isLocale } from "@/i18n/languages";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +14,10 @@ export function LanguageSelect({
   id?: string;
 }) {
   const { locale, setLang, tr } = useLang();
+  const current = getLanguageOption(locale);
   return (
-    <label className={cn("inline-flex items-center gap-1.5", className)}>
+    <span className={cn("inline-flex max-w-full flex-col gap-0.5", className)}>
+    <label className="inline-flex items-center gap-1.5">
       <Languages className="size-4 shrink-0" aria-hidden="true" />
       <span className="sr-only">{tr("Language", "भाषा")}</span>
       <select
@@ -32,10 +34,16 @@ export function LanguageSelect({
         {LANGUAGE_OPTIONS.map((o) => (
           <option key={o.code} value={o.code} disabled={!o.enabled}>
             {o.native === o.english ? o.native : `${o.native} — ${o.english}`}
-            {o.enabled ? "" : ` (${tr("Coming soon", "जल्द आ रहा है")})`}
+            {o.enabled ? ` · ${availabilityLabel(o)}` : ` (${tr("Coming soon", "जल्द आ रहा है")})`}
           </option>
         ))}
       </select>
     </label>
+      {current && !current.fullUi ? (
+        <span className="max-w-[16rem] break-words text-xs opacity-80">
+          Your report can be written in the selected language. The app interface remains in English.
+        </span>
+      ) : null}
+    </span>
   );
 }

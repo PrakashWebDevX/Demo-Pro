@@ -40,6 +40,9 @@ export function Page({
       <footer className="border-t bg-card pb-24">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">{t("app_name")}</p>
+          <p className="mt-1 inline-block rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
+            Hackathon Demo • Demo data only • Not an official government service
+          </p>
           <p className="mt-1">
             Prototype for the Government of Jharkhand. For emergencies, contact the appropriate
             official emergency service — this platform does not replace emergency helplines.

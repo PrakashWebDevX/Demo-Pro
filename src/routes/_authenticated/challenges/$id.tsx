@@ -57,7 +57,7 @@ export const Route = createFileRoute("/_authenticated/challenges/$id")({
       { title: "Innovation Challenge — Eco-Bridge" },
       { name: "description", content: "Innovation challenge details, partner matching and public progress." },
       { property: "og:title", content: "Innovation Challenge — Eco-Bridge" },
-      { property: "og:description", content: "AI recommends. Government approves." },
+      { property: "og:description", content: "AI suggests. Government decides." },
     ],
   }),
   component: ChallengePage,
@@ -282,7 +282,7 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
   return (
     <Page title={c.title} description={`${c.challenge_code} · ${c.location ?? c.district ?? ""}`}>
       <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent/15 px-3 py-1 text-sm font-medium text-accent">
-        <Sparkles className="size-4" aria-hidden="true" /> AI recommends. Government approves.
+        <Sparkles className="size-4" aria-hidden="true" /> AI suggests. Government decides.
       </p>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
