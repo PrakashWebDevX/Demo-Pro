@@ -37,6 +37,9 @@ export const CATEGORY_KEYS = [
   "safety",
   "education",
   "health",
+  "agriculture",
+  "electricity",
+  "natural_disaster",
   "other",
 ] as const;
 
@@ -51,6 +54,9 @@ export const CATEGORY_LABELS: Record<string, { en: string; hi: string }> = {
   safety: { en: "Public Safety", hi: "सार्वजनिक सुरक्षा" },
   education: { en: "School / Education", hi: "विद्यालय / शिक्षा" },
   health: { en: "Health", hi: "स्वास्थ्य" },
+  agriculture: { en: "Agriculture", hi: "कृषि" },
+  electricity: { en: "Electricity", hi: "बिजली" },
+  natural_disaster: { en: "Natural Disaster", hi: "प्राकृतिक आपदा" },
   other: { en: "Other", hi: "अन्य" },
 };
 

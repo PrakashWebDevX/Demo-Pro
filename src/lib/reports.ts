@@ -96,9 +96,15 @@ export async function fetchReportMedia(reportId: string): Promise<ReportMediaIte
     .from("report_media")
     .select("id, file_url, file_type, created_at")
     .eq("report_id", reportId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
   if (error) throw error;
-  const rows = (data ?? []) as Array<{ id: string; file_url: string; file_type: string | null }>;
+  // Newest image wins: older shared/placeholder image rows are not shown.
+  const all = (data ?? []) as Array<{ id: string; file_url: string; file_type: string | null }>;
+  const rows = all.filter((r, i) =>
+    (r.file_type ?? "").startsWith("image/")
+      ? i === all.findIndex((o) => (o.file_type ?? "").startsWith("image/"))
+      : true,
+  );
   if (rows.length === 0) return [];
   const { data: signed } = await supabase.storage
     .from("report-media")
@@ -122,6 +128,36 @@ export async function fetchReportMedia(reportId: string): Promise<ReportMediaIte
 
 export async function fetchMediaUrls(reportId: string): Promise<string[]> {
   return (await fetchReportMedia(reportId)).map((m) => m.url);
+}
+
+/** First image URL per report, for list-card thumbnails. One query + one batch signing call. */
+export async function fetchReportThumbnails(reportIds: string[]): Promise<Record<string, string>> {
+  if (reportIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("report_media")
+    .select("report_id, file_url, file_type, created_at")
+    .in("report_id", reportIds)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const first = new Map<string, string>();
+  for (const row of (data ?? []) as Array<{ report_id: string; file_url: string; file_type: string | null }>) {
+    if (!(row.file_type ?? "").startsWith("image/")) continue;
+    if (!first.has(row.report_id)) first.set(row.report_id, row.file_url);
+  }
+  if (first.size === 0) return {};
+  const paths = [...first.values()];
+  const { data: signed } = await supabase.storage.from("report-media").createSignedUrls(paths, 3600);
+  const urlByPath = new Map<string, string>();
+  paths.forEach((p, i) => {
+    const u = signed?.[i]?.signedUrl;
+    if (u) urlByPath.set(p, u);
+  });
+  const out: Record<string, string> = {};
+  for (const [reportId, path] of first) {
+    const u = urlByPath.get(path);
+    if (u) out[reportId] = u;
+  }
+  return out;
 }
 
 /**

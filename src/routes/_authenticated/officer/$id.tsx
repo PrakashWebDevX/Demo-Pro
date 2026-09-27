@@ -27,10 +27,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 import { MediaGallery } from "@/components/app/MediaGallery";
 import { AssignmentPanel } from "@/components/app/AssignmentPanel";
 import { MasterClassificationCard } from "@/components/app/MasterClassificationCard";
 import { ChallengeLink } from "@/components/app/ChallengeLink";
+import { PartnerVisibilityCard } from "@/components/app/PartnerVisibility";
 import {
   changeReportStatus,
   fetchDepartments,
@@ -61,6 +63,25 @@ function OfficerReviewPage() {
     queryFn: fetchDepartments,
   });
   const { data: media = [] } = useQuery({ queryKey: ["media", id], queryFn: () => fetchReportMedia(id) });
+  const { data: duplicates = [] } = useQuery({
+    queryKey: ["duplicates", id, report?.category_key, report?.district],
+    enabled: !!report,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 90 * 864e5).toISOString();
+      const { data, error } = await supabase
+        .from("reports")
+        .select("id, title, public_issue_id, status, priority, created_at, village_or_ward")
+        .eq("category_key", report!.category_key)
+        .eq("district", report!.district)
+        .neq("id", report!.id)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const [showDuplicates, setShowDuplicates] = useState(false);
 
   const [remark, setRemark] = useState("");
   const [departmentId, setDepartmentId] = useState<string>("");
@@ -97,7 +118,7 @@ function OfficerReviewPage() {
   if (!report) {
     return (
       <Page title={lang === "en" ? "Report not found" : "शिकायत नहीं मिली"}>
-        <Button onClick={() => navigate({ to: "/officer", search: { status: undefined, priority: undefined } })}>
+        <Button onClick={() => navigate({ to: "/officer", search: { status: undefined, priority: undefined, type: undefined } })}>
           {lang === "en" ? "Back to dashboard" : "वापस डैशबोर्ड"}
         </Button>
       </Page>
@@ -120,46 +141,124 @@ function OfficerReviewPage() {
               {report.reporter_name ?? (lang === "en" ? "Citizen" : "नागरिक")}
             </p>
             {media.length > 0 ? (
-              <MediaGallery media={media} publicId={report.public_issue_id} className="mt-4" />
+              <>
+                <h2 className="mt-4 text-lg font-semibold">{lang === "en" ? "Citizen Evidence" : "नागरिक प्रमाण"}</h2>
+                <MediaGallery media={media} publicId={report.public_issue_id} className="mt-2" />
+              </>
             ) : null}
+            <h2 className="mt-4 text-lg font-semibold">{lang === "en" ? "Resolution Evidence" : "समाधान प्रमाण"}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {lang === "en" ? "Resolution photo will be added after field verification." : "क्षेत्र सत्यापन के बाद समाधान फोटो जोड़ी जाएगी।"}
+            </p>
           </div>
 
           <div className="rounded-lg border border-accent/40 bg-accent/8 p-5">
             <p className="flex items-center gap-2 text-lg font-semibold text-accent">
               <Sparkles className="size-5" aria-hidden="true" />
-              {lang === "en"
-                ? "AI suggestion — pending human approval"
-                : "एआई सुझाव — मानव स्वीकृति शेष"}
+              AI Classification
             </p>
-            <ul className="mt-3 grid gap-1 text-sm">
-              <li>
-                {lang === "en" ? "Classified category" : "वर्गीकृत श्रेणी"}:{" "}
-                <b>{report.ai_category ?? "—"}</b>
-              </li>
-              <li>
-                {lang === "en" ? "Suggested priority" : "सुझाई प्राथमिकता"}:{" "}
-                <b>{report.ai_priority ?? "—"}</b>
-              </li>
-              <li>
-                {lang === "en" ? "Recommended department" : "सुझाया विभाग"}:{" "}
-                <b>{report.ai_recommended_department ?? "—"}</b>
-              </li>
-              <li>
-                {lang === "en" ? "Possible duplicates" : "संभावित डुप्लिकेट"}:{" "}
-                <b>{report.ai_duplicate_count}</b>
-              </li>
-              {report.ai_next_action ? (
+            {!report.ai_category && !report.ai_recommended_department && !report.ai_next_action && !report.ai_priority ? (
+              <p className="mt-3 text-sm text-muted-foreground">AI classification is not available for this report.</p>
+            ) : (
+              <ul className="mt-3 grid gap-1 text-sm">
                 <li>
-                  {lang === "en" ? "Recommended next action" : "अनुशंसित अगला कदम"}:{" "}
-                  {report.ai_next_action}
+                  Recommended Path:{" "}
+                  <b>{report.is_innovation ? "Potential Innovation Issue" : report.ai_category ? "Simple Issue" : "Officer Review Required"}</b>
                 </li>
+                {report.ai_category ? <li>Category: <b>{report.ai_category}</b></li> : null}
+                {report.ai_priority ? <li>Suggested priority: <b>{report.ai_priority}</b></li> : null}
+                {report.ai_recommended_department ? <li>Suggested department: <b>{report.ai_recommended_department}</b></li> : null}
+                <li>Similar reports: <b>{report.ai_duplicate_count}</b></li>
+                {report.ai_next_action ? <li>Suggested next step: {report.ai_next_action}</li> : null}
+              </ul>
+            )}
+            <p className="mt-3 text-sm font-medium">AI recommends. Government officer makes the final decision.</p>
+          </div>
+
+          {report.ai_next_action || report.ai_recommended_department ? (
+            <div className="card-surface break-words p-5">
+              <h2 className="text-lg font-semibold">AI Suggested Solution</h2>
+              <ul className="mt-3 grid gap-2 text-sm">
+                <li className="flex flex-col sm:flex-row sm:gap-1">
+                  <span>Recommended Path:</span>
+                  <b>{report.is_innovation ? "Potential Innovation Issue" : "Simple Issue"}</b>
+                </li>
+                {report.ai_next_action ? (
+                  <li className="flex flex-col sm:flex-row sm:gap-1">
+                    <span>{report.is_innovation ? "Recommended next step:" : "Suggested direct action:"}</span>
+                    <span className="min-w-0">{report.ai_next_action}</span>
+                  </li>
+                ) : null}
+                {report.ai_recommended_department ? (
+                  <li className="flex flex-col sm:flex-row sm:gap-1">
+                    <span>{report.is_innovation ? "Suggested departments:" : "Recommended department:"}</span>
+                    <b className="min-w-0">{report.ai_recommended_department}</b>
+                  </li>
+                ) : null}
+                {!report.is_innovation && report.ai_priority ? (
+                  <li className="flex flex-col sm:flex-row sm:gap-1">
+                    <span>Priority:</span>
+                    <b>{report.ai_priority}</b>
+                  </li>
+                ) : null}
+                {!report.is_innovation ? <li className="text-muted-foreground">Verify work before closing.</li> : null}
+              </ul>
+              {report.is_innovation ? (
+                <p className="mt-3 text-sm font-medium text-warning">
+                  Possible options require feasibility review and pilot approval. They are not an approved final solution.
+                </p>
               ) : null}
-            </ul>
-            <p className="mt-3 text-sm font-medium">
+              <p className="mt-3 text-sm font-medium">AI suggestions are advisory. Government officer approval is required before action.</p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">AI suggestion is not available for this report.</p>
+          )}
+
+          <div className="card-surface p-5">
+            <button
+              type="button"
+              onClick={() => setShowDuplicates((v) => !v)}
+              aria-expanded={showDuplicates}
+              className="flex w-full items-center justify-between gap-2 text-left"
+            >
+              <h2 className="text-lg font-semibold">
+                {lang === "en" ? "Duplicate Reports" : "डुप्लिकेट शिकायतें"}
+              </h2>
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                {duplicates.length}
+              </span>
+            </button>
+            <p className="mt-1 text-sm text-muted-foreground">
               {lang === "en"
-                ? "AI helps decisions. Humans approve actions."
-                : "एआई निर्णय में मदद करता है। कार्रवाई मनुष्य स्वीकृत करते हैं।"}
+                ? `Similar reports in ${report.district} (same category, last 90 days). Click to view each report.`
+                : `${report.district} में मिलती-जुलती शिकायतें (पिछले 90 दिन)।`}
             </p>
+            {showDuplicates ? (
+              duplicates.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {lang === "en" ? "No duplicate reports found for this issue." : "कोई डुप्लिकेट शिकायत नहीं मिली।"}
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {duplicates.map((d) => (
+                    <li key={d.id}>
+                      <Link
+                        to="/officer/$id"
+                        params={{ id: d.id }}
+                        className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                      >
+                        <span className="min-w-0 flex-1 font-medium">{d.title}</span>
+                        <StatusBadge status={d.status} />
+                        <span className="text-xs text-muted-foreground">
+                          {d.public_issue_id} · {d.village_or_ward ?? report.district} ·{" "}
+                          {new Date(d.created_at).toLocaleDateString()}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : null}
           </div>
 
           {user ? (
@@ -180,6 +279,7 @@ function OfficerReviewPage() {
             </div>
           ) : null}
 
+          <PartnerVisibilityCard report={report} />
           <ChallengeLink reportId={report.id} />
 
           <div className="card-surface p-5">
@@ -288,7 +388,7 @@ function OfficerReviewPage() {
             ))}
           </ol>
           <Button asChild variant="link" className="mt-4 px-0">
-            <Link to="/officer" search={{ status: undefined, priority: undefined }}>{lang === "en" ? "Back to all reports" : "सभी शिकायतें"}</Link>
+            <Link to="/officer" search={{ status: undefined, priority: undefined, type: undefined }}>{lang === "en" ? "Back to all reports" : "सभी शिकायतें"}</Link>
           </Button>
         </div>
       </div>

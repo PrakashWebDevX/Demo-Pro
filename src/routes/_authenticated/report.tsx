@@ -10,7 +10,6 @@ import {
   CloudOff,
   Loader2,
   MapPin,
-  Mic,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -30,6 +29,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
+import { VoiceReport } from "@/components/app/VoiceReport";
 import { CATEGORY_KEYS, CATEGORY_LABELS, DISTRICTS } from "@/lib/constants";
 import { analyseReport } from "@/lib/ai-demo";
 import { fetchDepartments, uploadReportMedia } from "@/lib/reports";
@@ -326,6 +326,7 @@ function ReportIssuePage() {
       ai_duplicate_count: suggestion.duplicate_count,
       ai_recommended_department: suggestion.recommended_department,
       ai_next_action: suggestion.next_action,
+      is_innovation: suggestion.is_innovation,
       language: lang,
     };
 
@@ -426,6 +427,22 @@ function ReportIssuePage() {
       }
     >
       <div className="mx-auto max-w-2xl">
+        <div className="card-surface mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p className="font-semibold">
+              {tr("Prefer to speak?", "बोलकर बताना चाहते हैं?")}{" "}
+              <span className="ml-1 rounded-md bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                {tr("Demo voice assistant", "डेमो वॉइस सहायक")}
+              </span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {tr("Report your issue using the AI Voice Assistant.", "एआई वॉइस सहायक से अपनी समस्या दर्ज करें।")}
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => window.dispatchEvent(new Event("eco-open-phone-assistant"))}>
+            {tr("Start Voice Report", "वॉइस रिपोर्ट शुरू करें")}
+          </Button>
+        </div>
         <div className="mb-4">
           <Progress value={(step / 5) * 100} aria-label="Form progress" />
           <p className="mt-2 text-sm text-muted-foreground">
@@ -495,10 +512,11 @@ function ReportIssuePage() {
                   className="text-base"
                 />
               </div>
-              <Button type="button" variant="outline" disabled className="w-full sm:w-auto">
-                <Mic className="size-4" />
-                {tr("Voice note (coming soon)", "वॉइस नोट (जल्द)")}
-              </Button>
+              <VoiceReport
+                onUseTranscript={(text) =>
+                  setForm((f) => ({ ...f, description: f.description ? `${f.description}\n${text}` : text }))
+                }
+              />
             </div>
           ) : null}
 

@@ -435,12 +435,19 @@ function StaffView({ challenge: c, timeline }: { challenge: Challenge; timeline:
           <ImpactEditor challenge={c} by={by} onSaved={refresh} />
           <StaffFeedback challengeId={c.id} />
 
-          {media.length > 0 ? (
-            <div className="card-surface p-5">
-              <h2 className="text-lg font-semibold">Linked evidence</h2>
+          <div className="card-surface p-5">
+            <h2 className="text-lg font-semibold">Challenge Evidence</h2>
+            {media.length > 0 ? (
               <MediaGallery media={media} publicId={c.challenge_code} className="mt-3" />
-            </div>
-          ) : null}
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">No evidence photos linked to this challenge yet.</p>
+            )}
+          </div>
+
+          <div className="card-surface p-5">
+            <h2 className="text-lg font-semibold">Resolution Evidence</h2>
+            <p className="mt-3 text-sm text-muted-foreground">Resolution photo will be added after field verification.</p>
+          </div>
         </div>
 
         <div className="card-surface h-fit p-5">

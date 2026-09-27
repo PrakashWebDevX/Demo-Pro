@@ -14,6 +14,8 @@ export interface AiSuggestion {
   duplicate_count: number;
   location_relevance: string;
   next_action: string;
+  is_innovation: boolean;
+  innovation_reason: string | null;
 }
 
 const CATEGORY_RULES: Array<{
@@ -70,6 +72,24 @@ const CATEGORY_RULES: Array<{
     department: "Health",
     words: ["hospital", "health", "doctor", "medicine", "clinic", "sub-centre"],
   },
+  {
+    key: "agriculture",
+    label: "Agriculture",
+    department: "Agriculture, Animal Husbandry and Cooperative",
+    words: ["crop", "farm", "farmer", "irrigation", "paddy", "field", "kisan", "drought", "pest"],
+  },
+  {
+    key: "electricity",
+    label: "Electricity",
+    department: "Energy",
+    words: ["electricity", "power", "transformer", "electric pole", "blackout", "bijli", "voltage"],
+  },
+  {
+    key: "natural_disaster",
+    label: "Natural Disaster",
+    department: "Disaster Management",
+    words: ["flood", "landslide", "cyclone", "disaster", "earthquake", "storm", "lightning strike"],
+  },
 ];
 
 const HIGH_PRIORITY_WORDS = [
@@ -85,6 +105,43 @@ const HIGH_PRIORITY_WORDS = [
   "injury",
 ];
 
+/**
+ * Innovation signals: the report proposes a new idea/technology, or describes
+ * a recurring problem that a one-off fix cannot solve.
+ */
+const INNOVATION_IDEA_WORDS = [
+  "innovation",
+  "prototype",
+  "pilot",
+  "student idea",
+  "our team",
+  "we have built",
+  "we built",
+  "drone",
+  "sensor",
+  "solar",
+  "low-cost",
+  "low cost",
+  "new solution",
+  "mobile app",
+  "technology",
+];
+
+const INNOVATION_RECURRING_WORDS = [
+  "repeated",
+  "recurring",
+  "again and again",
+  "every year",
+  "every monsoon",
+  "every month",
+  "frequent",
+  "long-term solution",
+  "long term solution",
+  "permanent solution",
+  "keeps happening",
+  "same problem",
+];
+
 const DEFAULT_DEPARTMENT_BY_CATEGORY: Record<string, string> = {
   road_damage: "Road Construction",
   waste: "Municipal Administration",
@@ -94,6 +151,9 @@ const DEFAULT_DEPARTMENT_BY_CATEGORY: Record<string, string> = {
   safety: "Urban Development and Housing",
   education: "School Education",
   health: "Health",
+  agriculture: "Agriculture, Animal Husbandry and Cooperative",
+  electricity: "Energy",
+  natural_disaster: "Disaster Management",
   other: "Rural Development",
 };
 
@@ -123,6 +183,18 @@ export function analyseReport(input: {
     (r) => r.category_key === categoryKey && r.district === input.district,
   ).length;
 
+  const proposesIdea = INNOVATION_IDEA_WORDS.some((w) => text.includes(w));
+  const isRecurring =
+    INNOVATION_RECURRING_WORDS.some((w) => text.includes(w)) || duplicateCount >= 3;
+  const isInnovation = proposesIdea || isRecurring;
+  const innovationReason = !isInnovation
+    ? null
+    : proposesIdea && isRecurring
+      ? "Proposes a new approach for a recurring problem"
+      : proposesIdea
+        ? "Report proposes a new idea, technology, or pilot"
+        : "Same problem reported repeatedly — may need a long-term solution";
+
   return {
     category_key: categoryKey,
     category_label: matched?.label ?? "Other",
@@ -132,9 +204,12 @@ export function analyseReport(input: {
     location_relevance: input.district
       ? `Location matched to ${input.district} district records`
       : "Location not provided",
-    next_action:
-      priority === "high"
+    next_action: isInnovation
+      ? `Flag for innovation review — ${innovationReason}`
+      : priority === "high"
         ? `Immediate site inspection, then assign to ${department}`
         : `Verify details and assign to ${department}`,
+    is_innovation: isInnovation,
+    innovation_reason: innovationReason,
   };
 }

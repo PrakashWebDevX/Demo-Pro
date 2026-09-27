@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +26,8 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const g = globalThis as unknown as { __ecoAuthCtx?: React.Context<AuthContextValue | null> };
+const AuthContext = (g.__ecoAuthCtx ??= createContext<AuthContextValue | null>(null));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);

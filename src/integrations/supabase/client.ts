@@ -28,11 +28,20 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
+// Publishable (anon) defaults so the cloud preview works even when env vars
+// are not injected at build time. These are safe to expose in client code.
+const DEFAULT_SUPABASE_URL = 'https://wuflggvjynohocbegpue.supabase.co';
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_IplmtQArEpyFGr4BGKZJLQ_rXQl4ct-';
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+  const SUPABASE_URL =
+    import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] || DEFAULT_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY =
+    import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    process.env['SUPABASE_PUBLISHABLE_KEY'] ||
+    DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [

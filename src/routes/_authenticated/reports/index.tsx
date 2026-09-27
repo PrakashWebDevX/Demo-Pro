@@ -46,8 +46,9 @@ function MyReportsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("report_media")
-        .select("report_id, file_url")
-        .in("report_id", ids);
+        .select("report_id, file_url, created_at")
+        .in("report_id", ids)
+        .order("created_at", { ascending: false });
       const first = new Map<string, string>();
       for (const m of data ?? []) if (!first.has(m.report_id)) first.set(m.report_id, m.file_url as string);
       if (first.size === 0) return {} as Record<string, string>;

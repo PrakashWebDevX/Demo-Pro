@@ -98,49 +98,38 @@ export function AppHeader() {
   return (
     <header className="gov-banner">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
           <span
             aria-hidden="true"
-            className="flex size-11 items-center justify-center overflow-hidden rounded-md bg-primary-foreground/12 ring-1 ring-primary-foreground/25 p-1"
+            className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary-foreground/12 ring-1 ring-primary-foreground/25 p-1"
           >
             <img src="/favicon.ico" alt="Eco-Bridge logo" className="size-8 object-contain" />
           </span>
 
-          <span className="leading-tight">
-            <span className="block text-lg font-bold">{t("app_name")}</span>
-            <span className="block text-xs text-primary-foreground/80">{t("app_tagline")}</span>
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-lg font-bold">{t("app_name")}</span>
+            <span className="block truncate text-xs text-primary-foreground/80">{t("app_tagline")}</span>
           </span>
         </Link>
 
-        <div className="ml-auto flex items-center gap-2">
-          <LanguageToggle />
-          <ThemeSelect />
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
+            <LanguageToggle />
+            <ThemeSelect />
+          </div>
           <NotificationBell />
-
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-            {links.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className="rounded-md px-3 py-2 text-sm font-medium text-primary-foreground/90 hover:bg-primary-foreground/10"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-
           {user ? (
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={handleSignOut}
-              className="hidden md:inline-flex"
+              className="hidden lg:inline-flex"
             >
               <LogOut className="size-4" /> {t("logout")}
             </Button>
           ) : (
-            <Button asChild variant="secondary" size="sm" className="hidden md:inline-flex">
+            <Button asChild variant="secondary" size="sm" className="hidden lg:inline-flex">
               <Link to="/auth">{t("login")}</Link>
             </Button>
           )}
@@ -150,13 +139,13 @@ export function AppHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-primary-foreground hover:bg-primary-foreground/10 md:hidden"
+                className="size-11 text-primary-foreground hover:bg-primary-foreground/10 lg:hidden"
                 aria-label="Open menu"
               >
                 <Menu className="size-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
+            <SheetContent side="right" className="w-72 max-w-[85vw] overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>{t("app_name")}</SheetTitle>
               </SheetHeader>
@@ -169,6 +158,10 @@ export function AppHeader() {
                     </span>
                   </p>
                 ) : null}
+                <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md bg-primary p-2 text-primary-foreground sm:hidden">
+                  <LanguageToggle />
+                  <ThemeSelect />
+                </div>
                 {links.map((l) => (
                   <Link
                     key={l.to}
@@ -191,6 +184,21 @@ export function AppHeader() {
             </SheetContent>
           </Sheet>
         </div>
+
+        <nav
+          className="hidden w-full flex-wrap items-center gap-1 border-t border-primary-foreground/15 pt-2 lg:flex"
+          aria-label="Main"
+        >
+          {links.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className="rounded-md px-3 py-2 text-sm font-medium text-primary-foreground/90 hover:bg-primary-foreground/10"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </header>
   );

@@ -18,6 +18,7 @@ import {
 import heroImg from "@/assets/hero-citizen.jpg";
 import beforeImg from "@/assets/before-waste.jpg";
 import afterImg from "@/assets/after-clean.jpg";
+import collabImg from "@/assets/collab-field-test.jpg";
 import { Page } from "@/components/app/Page";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/app/badges";
@@ -54,13 +55,26 @@ function useLandingData() {
       const [resolved, challenges] = await Promise.all([
         supabase
           .from("reports")
-          .select("id, public_issue_id, title, district, category_key, status, resolved_at")
+          .select("id, public_issue_id, title, district, village_or_ward, category_key, status, resolved_at")
           .eq("status", "resolved")
           .order("resolved_at", { ascending: false })
-          .limit(4),
+          .limit(3),
         supabase.from("innovation_projects").select("id, title, district, status"),
       ]);
+      const ids = (resolved.data ?? []).map((r) => r.id);
+      const updates = ids.length
+        ? await supabase
+            .from("report_updates")
+            .select("report_id, remark, created_at")
+            .in("report_id", ids)
+            .order("created_at", { ascending: false })
+        : { data: [] as Array<{ report_id: string; remark: string | null }> };
+      const summaries: Record<string, string> = {};
+      for (const u of updates.data ?? []) {
+        if (u.remark && !summaries[u.report_id]) summaries[u.report_id] = u.remark;
+      }
       return {
+        summaries,
         resolved: resolved.data ?? [],
         challenges: challenges.data ?? [],
       };
@@ -236,27 +250,87 @@ function Landing() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-xl font-bold">
-          {tr("Recently resolved issues", "हाल में हल हुई शिकायतें")}
-        </h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {(data?.resolved ?? []).map((r) => (
-            <div key={r.id} className="card-surface p-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-sm text-muted-foreground">{r.public_issue_id}</span>
-                <StatusBadge status={r.status as string} />
+        <h2 className="text-xl font-bold">{tr("Recently Resolved Issues", "हाल में हल हुई समस्याएँ")}</h2>
+        <p className="text-muted-foreground">
+          {tr("See how citizen reports created community improvements.", "देखें कैसे नागरिक रिपोर्टों से समुदाय में सुधार हुआ।")}
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(data?.resolved ?? []).map((r) => {
+            const summary = data?.summaries[r.id];
+            return (
+              <div key={r.id} className="card-surface flex flex-col p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-accent/10 text-accent">
+                    <ClipboardList className="size-5" aria-hidden="true" />
+                  </span>
+                  <StatusBadge status="resolved" />
+                </div>
+                <p className="mt-3 font-semibold">{r.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {pick(CATEGORY_LABELS[r.category_key as string])} · {[r.village_or_ward, r.district].filter(Boolean).join(", ")}
+                </p>
+                {summary ? <p className="mt-2 line-clamp-2 text-sm">{summary}</p> : null}
+                <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                  {tr("Resolution photo will be added after field verification.", "क्षेत्र सत्यापन के बाद समाधान फोटो जोड़ी जाएगी।")}
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-3 self-start">
+                  <Link to="/reports/$id" params={{ id: r.id }}>{tr("View Outcome", "परिणाम देखें")}</Link>
+                </Button>
               </div>
-              <p className="mt-2 font-semibold">{r.title}</p>
-              <p className="text-sm text-muted-foreground">
-                {pick(CATEGORY_LABELS[r.category_key as string])} · {r.district}
-              </p>
-            </div>
-          ))}
+            );
+          })}
           {(data?.resolved.length ?? 0) === 0 ? (
-            <p className="text-muted-foreground">
-              {tr("No resolved issues yet.", "अभी कोई हल हुई शिकायत नहीं।")}
-            </p>
+            <p className="text-muted-foreground">{tr("No resolved issues yet.", "अभी कोई हल हुई शिकायत नहीं।")}</p>
           ) : null}
+        </div>
+      </section>
+
+      <section className="card-surface mt-8 overflow-hidden" aria-labelledby="solved-h">
+        <div className="grid lg:grid-cols-2">
+          <figure className="relative min-h-64">
+            <img
+              src={collabImg}
+              alt="A government officer, university students and an industry engineer field-testing a low-cost solar water-level sensor at a street drain"
+              width={1344}
+              height={768}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 size-full object-cover"
+            />
+            <figcaption className="absolute left-3 top-3 rounded-md bg-success px-3 py-1 text-sm font-semibold text-success-foreground">
+              {tr("Field test passed", "फील्ड परीक्षण सफल")}
+            </figcaption>
+          </figure>
+          <div className="p-6 sm:p-8">
+            <h2 id="solved-h" className="text-xl font-bold">
+              {tr("Solved together: government, university and industry", "मिलकर समाधान: सरकार, विश्वविद्यालय और उद्योग")}
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              {tr(
+                "Citizens reported repeated waterlogging. An officer approved it as an innovation challenge, a university team researched a low-cost sensor, and an industry partner built and field-tested it with the municipality. The pilot passed — the ward now gets early flood warnings.",
+                "नागरिकों ने बार-बार जलभराव की शिकायत की। अधिकारी ने इसे नवाचार चुनौती के रूप में स्वीकृत किया, विश्वविद्यालय टीम ने कम लागत का सेंसर शोध किया, और उद्योग साझेदार ने नगरपालिका के साथ फील्ड परीक्षण किया। पायलट सफल रहा — अब वार्ड को बाढ़ की पूर्व चेतावनी मिलती है।",
+              )}
+            </p>
+            <ul className="mt-4 grid gap-2 text-sm">
+              <li className="flex items-center gap-2 rounded-lg border p-3">
+                <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                <span><b>{tr("Government", "सरकार")}</b> — {tr("approved the challenge and verified the field test", "चुनौती स्वीकृत की और फील्ड परीक्षण सत्यापित किया")}</span>
+              </li>
+              <li className="flex items-center gap-2 rounded-lg border p-3">
+                <Users className="size-5 shrink-0 text-accent" aria-hidden="true" />
+                <span><b>{tr("University", "विश्वविद्यालय")}</b> — {tr("student team researched and prototyped the sensor", "छात्र टीम ने सेंसर का शोध और प्रोटोटाइप बनाया")}</span>
+              </li>
+              <li className="flex items-center gap-2 rounded-lg border p-3">
+                <HeartHandshake className="size-5 shrink-0 text-success" aria-hidden="true" />
+                <span><b>{tr("Industry", "उद्योग")}</b> — {tr("built, deployed and maintained the pilot units", "पायलट इकाइयाँ बनाईं, लगाईं और रखरखाव किया")}</span>
+              </li>
+            </ul>
+            <Button asChild className="mt-4">
+              <Link to="/innovation">
+                {tr("See innovation challenges", "नवाचार चुनौतियाँ देखें")} <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 

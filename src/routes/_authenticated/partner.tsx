@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { EmptyState, Page, StatCard } from "@/components/app/Page";
+import { ApprovedInnovationCases } from "@/components/app/PartnerVisibility";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,6 +154,7 @@ function MappedPartnerPortal({ role }: { role: "university_partner" | "industry_
           </article>
         ) : null)}
       </div>
+      <ApprovedInnovationCases />
     </Page>
   );
 }

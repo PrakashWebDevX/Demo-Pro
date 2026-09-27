@@ -40,6 +40,9 @@ export function PhoneAssistant() {
 
   useEffect(() => {
     setMinimized(window.localStorage.getItem(MIN_KEY) === "1");
+    const openFromEvent = () => setOpen(true);
+    window.addEventListener("eco-open-phone-assistant", openFromEvent);
+    return () => window.removeEventListener("eco-open-phone-assistant", openFromEvent);
   }, []);
 
   function setMin(v: boolean) {

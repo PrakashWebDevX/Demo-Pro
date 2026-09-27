@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { MediaGallery } from "@/components/app/MediaGallery";
 import { CitizenAssignmentCard, useReportRealtime } from "@/components/app/CitizenAssignmentCard";
@@ -24,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/reports/$id")({
 
 function ReportDetailPage() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user } = Route.useRouteContext();
   const { tr, lang, pick } = useLang();
   const queryClient = useQueryClient();
   useReportRealtime(id);
@@ -194,11 +193,20 @@ function ReportDetailPage() {
           {media.length > 0 ? (
             <div className="card-surface p-5">
               <h2 className="text-lg font-semibold">
-                {tr("Evidence", "प्रमाण")}
+                {tr("Citizen Evidence", "नागरिक प्रमाण")}
               </h2>
               <MediaGallery media={media} publicId={report.public_issue_id} className="mt-3" />
             </div>
           ) : null}
+
+          <div className="card-surface p-5">
+            <h2 className="text-lg font-semibold">
+              {tr("Resolution Evidence", "समाधान प्रमाण")}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {tr("Resolution photo will be added after field verification.", "क्षेत्र सत्यापन के बाद समाधान फोटो जोड़ी जाएगी।")}
+            </p>
+          </div>
 
           {isOwner && feedbackStage ? (
             <div className="card-surface p-5">

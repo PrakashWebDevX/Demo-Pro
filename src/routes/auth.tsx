@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import { Page } from "@/components/app/Page";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { DEMO_ACCOUNTS, DISTRICTS, ROLE_HOME, ROLE_LABELS } from "@/lib/constants";
 import { useLang } from "@/lib/i18n";
 import { LanguageSelect } from "@/components/app/LanguageSelect";
+import { DEMO_GUIDE_KEY, isDemoGuideEmail } from "@/components/app/DemoRoleGuide";
+
+const DEMO_ROLE_CARDS = [
+  { title: "Citizen", text: "Report and track civic issues.", button: "Citizen Demo", email: "citizen@demo.jh" },
+  { title: "Government Officer", text: "Review AI suggestions and approve actions.", button: "Officer Demo", email: "officer@demo.jh" },
+  { title: "University Partner", text: "View innovation invitations and research updates.", button: "University Demo", email: "university@demo.jh" },
+  { title: "Industry Partner", text: "View prototype and pilot collaboration.", button: "Industry Demo", email: "industry@demo.jh" },
+];
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -59,6 +67,7 @@ function AuthPage() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
+
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -93,6 +102,9 @@ function AuthPage() {
       return;
     }
     toast.success(tr("Signed in", "लॉगिन सफल"));
+    if (isDemoGuideEmail(loginEmail)) {
+      sessionStorage.setItem(DEMO_GUIDE_KEY, loginEmail.trim().toLowerCase());
+    }
     if (data.user) await goHomeFor(data.user.id);
   }
 
@@ -176,6 +188,9 @@ function AuthPage() {
       return;
     }
     toast.success(`${account.label} — ${tr("signed in", "लॉगिन सफल")}`);
+    if (isDemoGuideEmail(account.email)) {
+      sessionStorage.setItem(DEMO_GUIDE_KEY, account.email.trim().toLowerCase());
+    }
     navigate({ to: ROLE_HOME[account.role] ?? "/citizen" });
   }
 
@@ -187,7 +202,43 @@ function AuthPage() {
         tr("Sign in with email, or use a clearly labelled demo account for presentation.", "ईमेल से लॉगिन करें, या प्रस्तुति के लिए डेमो खाते का उपयोग करें।")
       }
     >
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <section className="card-surface p-5 sm:p-6" aria-labelledby="demo-roles-title">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 id="demo-roles-title" className="text-lg font-bold">Explore Demo Roles</h3>
+            <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
+              Hackathon Demo
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Choose a role to view a sample workflow — one click signs you in, no password needed.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {DEMO_ROLE_CARDS.map((c) => {
+              const account = DEMO_ACCOUNTS.find((a) => a.email === c.email);
+              return (
+                <div key={c.email} className="card-surface flex flex-col p-3">
+                  <p className="font-semibold">{c.title}</p>
+                  <p className="mt-1 flex-1 text-sm text-muted-foreground">{c.text}</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-3"
+                    disabled={busy === c.email}
+                    onClick={() => account && demoLogin(account)}
+                  >
+                    {busy === c.email ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {c.button}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Fictional demo data • Not an official government service.
+          </p>
+        </section>
+
         <div className="card-surface p-5 sm:p-6">
           <Tabs defaultValue="login">
             <TabsList className="grid w-full grid-cols-2">
@@ -337,39 +388,6 @@ function AuthPage() {
               </form>
             </TabsContent>
           </Tabs>
-        </div>
-
-        <div className="card-surface p-5 sm:p-6">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-5 text-accent" aria-hidden="true" />
-            <h2 className="text-xl font-bold">
-              {tr("Demo Mode — for presentation", "डेमो मोड — प्रस्तुति हेतु")}
-            </h2>
-          </div>
-          <p className="mt-2 text-muted-foreground">
-            {tr("These are clearly labelled demo accounts with seeded data. Password for every demo account: Jharkhand#Demo2026", "ये स्पष्ट रूप से चिह्नित डेमो खाते हैं। सभी डेमो खातों का पासवर्ड: Jharkhand#Demo2026")}
-          </p>
-          <div className="mt-4 grid gap-3">
-            {DEMO_ACCOUNTS.map((account) => (
-              <Button
-                key={account.email}
-                type="button"
-                variant="outline"
-                size="lg"
-                className="h-auto justify-between px-4 py-3 text-left"
-                onClick={() => demoLogin(account)}
-                disabled={busy === account.email}
-              >
-                <span>
-                  <span className="block font-semibold">{account.label}</span>
-                  <span className="block text-sm font-normal text-muted-foreground">
-                    {account.email}
-                  </span>
-                </span>
-                {busy === account.email ? <Loader2 className="size-4 animate-spin" /> : null}
-              </Button>
-            ))}
-          </div>
         </div>
       </div>
     </Page>

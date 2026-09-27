@@ -120,7 +120,7 @@ export async function fetchAssignment(reportId: string): Promise<Assignment | nu
 }
 
 const INNOVATION_KEYWORDS =
-  /sensor|predict|analytics|prototype|repeated|again|every (day|week)|recurring|overflow|cross-department/i;
+  /sensor|predict|analytics|prototype|repeated|again|every (day|week|monsoon|year|month)|recurring|overflow|cross-department|drone|student|pilot|research|solar|low[- ]cost|mobile app|new solution|we (have )?built|our team|innovation/i;
 
 const THEMES: Record<string, string> = {
   waste: "Smart waste fill-level sensing and collection-route optimisation",
@@ -205,7 +205,13 @@ export function computeMatches(
   if (relatedCount >= 5) reasonsInnov.push(`${relatedCount} similar reports in ${report.district}`);
   if (report.priority === "critical") reasonsInnov.push("priority is Critical");
   if (INNOVATION_KEYWORDS.test(text)) reasonsInnov.push("problem looks repeated or needs sensors/analytics");
-  const innovation = relatedCount >= 5 || report.priority === "critical" || (relatedCount >= 3 && reasonsInnov.length > 0);
+  const flaggedInnovation = (report as { is_innovation?: boolean | null }).is_innovation === true;
+  if (flaggedInnovation) reasonsInnov.push("report was flagged as an innovation idea by the AI triage");
+  const innovation =
+    flaggedInnovation ||
+    relatedCount >= 5 ||
+    report.priority === "critical" ||
+    (relatedCount >= 3 && reasonsInnov.length > 0);
 
   const scorePartner = (kind: "university" | "partner") =>
     dir.partners

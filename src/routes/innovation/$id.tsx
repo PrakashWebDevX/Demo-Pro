@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { PartnerOpportunity } from "@/components/app/PartnerOpportunity";
 import { useLang } from "@/lib/i18n";
 import { INNOVATION_STAGES, INNOVATION_STAGE_LABELS, type InnovationProject } from "@/lib/innovation";
 
@@ -114,6 +115,8 @@ function InnovationDetail() {
               </p>
             ) : null}
           </div>
+
+          <PartnerOpportunity project={project} role={role} />
 
           {canApply ? (
             <div className="card-surface p-5">
@@ -229,6 +232,10 @@ function InnovationDetail() {
             ))}
           </ol>
         </div>
+      </div>
+      <div className="card-surface mt-6 p-5">
+        <h2 className="font-semibold">Suggested Innovation Direction</h2>
+        <p className="mt-2 text-sm text-muted-foreground">AI suggestions are advisory. Government approval is required before any pilot or implementation.</p>
       </div>
     </Page>
   );

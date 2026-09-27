@@ -1,4 +1,4 @@
-const CACHE_NAME = "eco-bridge-shell-v2";
+const CACHE_NAME = "eco-bridge-shell-v4";
 const APP_SHELL = [
   "/",
   "/offline.html",
@@ -22,7 +22,12 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
+      // A newly activated worker can otherwise leave an already-open tab
+      // running route modules supplied by the previous worker. Reload each
+      // controlled window once so the provider and route come from one build.
+      .then(() => self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+      .then((clients) => Promise.all(clients.map((client) => client.navigate(client.url)))),
   );
 });
 
@@ -40,7 +45,20 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.destination === "script" || request.destination === "style" || request.destination === "image" || request.destination === "font") {
+  // App code must stay network-first. Cache-first scripts can keep an old
+  // route module after a deployment and mix it with the current application.
+  if (request.destination === "script" || request.destination === "style") {
+    event.respondWith(
+      fetch(request).then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        return response;
+      }).catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  if (request.destination === "image" || request.destination === "font") {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
         const copy = response.clone();

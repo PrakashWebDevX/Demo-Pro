@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useLang } from "@/lib/i18n";
 import { useAuth, isStaffRole } from "@/lib/auth";
-import { fetchReports } from "@/lib/reports";
+import { fetchReports, fetchReportThumbnails } from "@/lib/reports";
 import { CATEGORY_KEYS, CATEGORY_LABELS, DISTRICTS, STATUS_LABELS } from "@/lib/constants";
 import { CHALLENGE_STAGE_LABELS } from "@/lib/challenges";
 import { fetchOperationsDashboard, subscribeOperationsDashboard } from "@/lib/operations";
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/officer/")({
   validateSearch: (search: Record<string, unknown>) => ({
     status: typeof search["status"] === "string" ? search["status"] : undefined,
     priority: typeof search["priority"] === "string" ? search["priority"] : undefined,
+    type: search["type"] === "simple" || search["type"] === "innovation" ? (search["type"] as string) : undefined,
   }),
   component: OfficerDashboard,
 });
@@ -39,6 +40,7 @@ function OfficerDashboard() {
   const [status, setStatus] = useState(searchParams.status ?? "all");
   const [priority, setPriority] = useState(searchParams.priority ?? "all");
   const [category, setCategory] = useState("all");
+  const [caseType, setCaseType] = useState<string>(searchParams.type ?? "all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -89,10 +91,6 @@ function OfficerDashboard() {
     };
   }, [reports, lang]);
 
-  if (!isStaffRole(role)) {
-    return <Page title={lang === "en" ? "Access restricted" : "पहुंच प्रतिबंधित"}><EmptyState title={lang === "en" ? "This dashboard is for government staff." : "यह डैशबोर्ड सरकारी कर्मचारियों के लिए है।"} /></Page>;
-  }
-
   const filtered = useMemo(
     () =>
       reports.filter((r) => {
@@ -100,20 +98,49 @@ function OfficerDashboard() {
         if (status !== "all" && r.status !== status) return false;
         if (priority !== "all" && r.priority !== priority) return false;
         if (category !== "all" && r.category_key !== category) return false;
+        if (caseType === "simple" && r.is_innovation) return false;
+        if (caseType === "innovation" && !r.is_innovation) return false;
         if (search.trim()) {
           const q = search.trim().toLowerCase();
           if (!r.title.toLowerCase().includes(q) && !r.public_issue_id.toLowerCase().includes(q))
             return false;
         }
         return true;
+      }).sort((a, b) => {
+        if (caseType === "all") return 0;
+        const needs = (s: string) => (["submitted", "under_review", "info_requested"].includes(s) ? 0 : 1);
+        return needs(a.status) - needs(b.status);
       }),
-    [reports, district, status, priority, category, search],
+    [reports, district, status, priority, category, search, caseType],
   );
 
+  const masterCounts = {
+    simple: reports.filter((r) => !r.is_innovation).length,
+    innovation: reports.filter((r) => r.is_innovation).length,
+  };
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => setPage(1), [district, status, priority, category, search]);
+  useEffect(() => setPage(1), [district, status, priority, category, search, caseType]);
+  useEffect(() => setCaseType(searchParams.type ?? "all"), [searchParams.type]);
+  const applyCaseType = (next: string) => {
+    setCaseType(next);
+    void navigate({
+      to: "/officer",
+      search: (prev) => ({ status: prev.status, priority: prev.priority, type: next === "simple" || next === "innovation" ? next : undefined }),
+      replace: true,
+    });
+  };
 
+  const visibleIds = useMemo(() => visible.map((r) => r.id), [visible]);
+  const { data: thumbnails = {} } = useQuery({
+    queryKey: ["report-thumbnails", visibleIds],
+    queryFn: () => fetchReportThumbnails(visibleIds),
+    enabled: isStaffRole(role) && visibleIds.length > 0,
+  });
+
+  if (!isStaffRole(role)) {
+    return <Page title={lang === "en" ? "Access restricted" : "पहुंच प्रतिबंधित"}><EmptyState title={lang === "en" ? "This dashboard is for government staff." : "यह डैशबोर्ड सरकारी कर्मचारियों के लिए है।"} /></Page>;
+  }
 
   return (
     <Page
@@ -124,6 +151,26 @@ function OfficerDashboard() {
           : "एआई निर्णय में मदद करता है। कार्रवाई मनुष्य स्वीकृत करते हैं।"
       }
     >
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        {([
+          { key: "simple", title: "Simple Issues", text: "Standard reports with direct department resolution.", button: "View Simple Issues", count: masterCounts.simple },
+          { key: "innovation", title: "Innovation Issues", text: "Complex reports requiring innovation review or challenge workflow.", button: "View Innovation Issues", count: masterCounts.innovation },
+        ] as const).map((c) => (
+          <section key={c.key} className={`card-surface p-6 ${caseType === c.key ? "ring-2 ring-accent" : ""}`}>
+            <p className="text-sm font-medium text-accent">AI recommends. Government approves.</p>
+            <div className="mt-1 flex items-start justify-between gap-3">
+              <h2 className="text-xl font-bold">{c.title}</h2>
+              <span className="text-sm font-semibold text-muted-foreground">
+                {isLoading ? "Loading…" : `${c.title}: ${c.count}`}
+              </span>
+            </div>
+            <p className="mt-1 text-muted-foreground">{c.text}</p>
+            <Button className="mt-4 min-h-11 w-full sm:w-auto" onClick={() => { applyCaseType(c.key); document.getElementById("o-search")?.scrollIntoView({ behavior: "smooth" }); }}>
+              {c.button}
+            </Button>
+          </section>
+        ))}
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="col-span-full flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold">{lang === "en" ? "Operations Overview" : "संचालन अवलोकन"}</h2>
@@ -244,37 +291,70 @@ function OfficerDashboard() {
         />
       </div>
 
+      {caseType === "simple" || caseType === "innovation" ? (
+        <div className="card-surface mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="font-semibold">Showing: {caseType === "simple" ? "Simple Issues" : "Innovation Issues"}</p>
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => applyCaseType("all")}>Clear Filter</Button>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid gap-3">
         {isLoading ? <p className="text-muted-foreground">Loading…</p> : null}
         {!isLoading && filtered.length === 0 ? (
           <EmptyState title={lang === "en" ? "No reports match" : "कोई शिकायत नहीं मिली"} />
         ) : null}
         {visible.map((r) => (
-          <div key={r.id} className="card-surface p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-mono text-sm text-muted-foreground">{r.public_issue_id}</span>
-              <span className="flex flex-wrap gap-2">
-                {r.ai_duplicate_count > 1 ? (
-                  <span className="rounded-md bg-info/12 px-2.5 py-1 text-sm text-info">
-                    {lang === "en"
-                      ? `Possible duplicates: ${r.ai_duplicate_count}`
-                      : `संभावित डुप्लिकेट: ${r.ai_duplicate_count}`}
-                  </span>
-                ) : null}
-                <PriorityBadge priority={r.priority} />
-                <StatusBadge status={r.status} />
-              </span>
+          <div key={r.id} className="card-surface flex gap-4 p-4">
+            {thumbnails[r.id] ? (
+              <img
+                src={thumbnails[r.id]}
+                alt={lang === "en" ? "Report photo" : "शिकायत की तस्वीर"}
+                className="h-16 w-16 shrink-0 rounded-lg object-cover sm:h-24 sm:w-24"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground sm:h-24 sm:w-24"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6 sm:h-8 sm:w-8">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z" strokeLinejoin="round" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-mono text-sm text-muted-foreground">{r.public_issue_id}</span>
+                <span className="flex flex-wrap gap-2">
+                  {r.ai_duplicate_count > 1 ? (
+                    <span className="rounded-md bg-info/12 px-2.5 py-1 text-sm text-info">
+                      {lang === "en"
+                        ? `Possible duplicates: ${r.ai_duplicate_count}`
+                        : `संभावित डुप्लिकेट: ${r.ai_duplicate_count}`}
+                    </span>
+                  ) : null}
+                  <PriorityBadge priority={r.priority} />
+                  <StatusBadge status={r.status} />
+                </span>
+              </div>
+              <p className="mt-2 text-lg font-semibold">{r.title}</p>
+              <p className="text-sm text-muted-foreground">
+                {pick(CATEGORY_LABELS[r.category_key])} · {r.district} ·{" "}
+                {new Date(r.created_at).toLocaleDateString()}
+              </p>
+              {caseType === "innovation" ? (
+                <p className="mt-2 text-sm">
+                  AI classification: <strong>{r.ai_category ?? "Innovation Problem"}</strong> · Related reports: <strong>{r.ai_duplicate_count}</strong> · Suggested department: <strong>{r.ai_recommended_department ?? "—"}</strong>
+                  <span className="block text-muted-foreground">University and industry partners are shown on the linked challenge.</span>
+                </p>
+              ) : null}
+              <Button asChild className="mt-3">
+                <Link to="/officer/$id" params={{ id: r.id }}>
+                  {lang === "en" ? "Review report" : "समीक्षा करें"}
+                </Link>
+              </Button>
             </div>
-            <p className="mt-2 text-lg font-semibold">{r.title}</p>
-            <p className="text-sm text-muted-foreground">
-              {pick(CATEGORY_LABELS[r.category_key])} · {r.district} ·{" "}
-              {new Date(r.created_at).toLocaleDateString()}
-            </p>
-            <Button asChild className="mt-3">
-              <Link to="/officer/$id" params={{ id: r.id }}>
-                {lang === "en" ? "Review report" : "समीक्षा करें"}
-              </Link>
-            </Button>
           </div>
         ))}
       </div>
