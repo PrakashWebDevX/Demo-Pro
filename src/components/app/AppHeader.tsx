@@ -85,6 +85,7 @@ export function AppHeader() {
           : [{ to: "/innovation", label: t("innovation") }]),
         { to: "/challenges", label: tr("My Challenges", "मेरी चुनौतियाँ") },
         { to: "/impact", label: tr("Impact", "प्रभाव") },
+        { to: "/map", label: tr("Impact Map", "प्रभाव मानचित्र") },
         { to: "/help", label: t("help") },
         { to: "/contact", label: tr("Contact", "संपर्क") },
       ]

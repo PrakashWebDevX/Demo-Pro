@@ -18,6 +18,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCitizenRouteImport } from './routes/_authenticated/citizen'
 import { Route as AuthenticatedDepartmentRouteImport } from './routes/_authenticated/department'
 import { Route as AuthenticatedImpactRouteImport } from './routes/_authenticated/impact'
+import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedOfflineReportsRouteImport } from './routes/_authenticated/offline-reports'
 import { Route as AuthenticatedPartnerRouteImport } from './routes/_authenticated/partner'
@@ -74,6 +75,11 @@ const AuthenticatedDepartmentRoute = AuthenticatedDepartmentRouteImport.update({
 const AuthenticatedImpactRoute = AuthenticatedImpactRouteImport.update({
   id: '/impact',
   path: '/impact',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/citizen': typeof AuthenticatedCitizenRoute
   '/department': typeof AuthenticatedDepartmentRoute
   '/impact': typeof AuthenticatedImpactRoute
+  '/map': typeof AuthenticatedMapRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/offline-reports': typeof AuthenticatedOfflineReportsRoute
   '/partner': typeof AuthenticatedPartnerRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/citizen': typeof AuthenticatedCitizenRoute
   '/department': typeof AuthenticatedDepartmentRoute
   '/impact': typeof AuthenticatedImpactRoute
+  '/map': typeof AuthenticatedMapRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/offline-reports': typeof AuthenticatedOfflineReportsRoute
   '/partner': typeof AuthenticatedPartnerRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/citizen': typeof AuthenticatedCitizenRoute
   '/_authenticated/department': typeof AuthenticatedDepartmentRoute
   '/_authenticated/impact': typeof AuthenticatedImpactRoute
+  '/_authenticated/map': typeof AuthenticatedMapRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/offline-reports': typeof AuthenticatedOfflineReportsRoute
   '/_authenticated/partner': typeof AuthenticatedPartnerRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/citizen'
     | '/department'
     | '/impact'
+    | '/map'
     | '/notifications'
     | '/offline-reports'
     | '/partner'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/citizen'
     | '/department'
     | '/impact'
+    | '/map'
     | '/notifications'
     | '/offline-reports'
     | '/partner'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/_authenticated/citizen'
     | '/_authenticated/department'
     | '/_authenticated/impact'
+    | '/_authenticated/map'
     | '/_authenticated/notifications'
     | '/_authenticated/offline-reports'
     | '/_authenticated/partner'
@@ -366,6 +378,13 @@ declare module '@tanstack/react-router' {
       path: '/impact'
       fullPath: '/impact'
       preLoaderRoute: typeof AuthenticatedImpactRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/map': {
+      id: '/_authenticated/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof AuthenticatedMapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/notifications': {
@@ -467,6 +486,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCitizenRoute: typeof AuthenticatedCitizenRoute
   AuthenticatedDepartmentRoute: typeof AuthenticatedDepartmentRoute
   AuthenticatedImpactRoute: typeof AuthenticatedImpactRoute
+  AuthenticatedMapRoute: typeof AuthenticatedMapRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOfflineReportsRoute: typeof AuthenticatedOfflineReportsRoute
   AuthenticatedPartnerRoute: typeof AuthenticatedPartnerRoute
@@ -485,6 +505,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCitizenRoute: AuthenticatedCitizenRoute,
   AuthenticatedDepartmentRoute: AuthenticatedDepartmentRoute,
   AuthenticatedImpactRoute: AuthenticatedImpactRoute,
+  AuthenticatedMapRoute: AuthenticatedMapRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOfflineReportsRoute: AuthenticatedOfflineReportsRoute,
   AuthenticatedPartnerRoute: AuthenticatedPartnerRoute,
