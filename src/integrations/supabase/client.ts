@@ -30,8 +30,8 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 // Publishable (anon) defaults so the cloud preview works even when env vars
 // are not injected at build time. These are safe to expose in client code.
-const DEFAULT_SUPABASE_URL = 'https://wuflggvjynohocbegpue.supabase.co';
-const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_IplmtQArEpyFGr4BGKZJLQ_rXQl4ct-';
+const DEFAULT_SUPABASE_URL = 'https://hfrrgoiqtakmvhyrgcra.supabase.co';
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_JURwfClBBUVyJMTxRczIZA_iDiYnvlZ';
 
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
